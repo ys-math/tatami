@@ -1,4 +1,5 @@
 import Carbon.HIToolbox
+import TatamiCore
 
 /// Registers system-wide hotkeys through Carbon's `RegisterEventHotKey`,
 /// which needs no Input Monitoring permission.
@@ -28,6 +29,16 @@ final class HotKeyCenter {
     private var handler: EventHandlerRef?
 
     private init() {}
+
+    @discardableResult
+    func register(_ hotkey: Hotkey, action: @escaping @MainActor () -> Void) throws -> UInt32 {
+        var modifiers: Modifiers = []
+        if hotkey.modifiers.contains(.control) { modifiers.insert(.control) }
+        if hotkey.modifiers.contains(.option) { modifiers.insert(.option) }
+        if hotkey.modifiers.contains(.shift) { modifiers.insert(.shift) }
+        if hotkey.modifiers.contains(.command) { modifiers.insert(.command) }
+        return try register(keyCode: hotkey.keyCode, modifiers: modifiers, action: action)
+    }
 
     @discardableResult
     func register(

@@ -35,6 +35,14 @@ struct GridGeometryTests {
         #expect(gappedGrid.rect(for: span) == CGRect(x: 360, y: 50, width: 510, height: 510))
     }
 
+    @Test func cellRectsTileTheGridRowByRow() {
+        let cells = gappedGrid.cellRects()
+        #expect(cells.count == 8)
+        #expect(cells.first == CGRect(x: 100, y: 50, width: 250, height: 250))
+        #expect(cells[4] == CGRect(x: 100, y: 310, width: 250, height: 250))
+        #expect(cells.last?.maxX == gappedGrid.area.maxX)
+    }
+
     @Test func fullSpanCoversArea() {
         #expect(gappedGrid.rect(for: gappedGrid.fullSpan) == gappedGrid.area)
     }

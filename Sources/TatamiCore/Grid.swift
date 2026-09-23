@@ -87,6 +87,15 @@ public struct Grid: Sendable, Equatable {
         CellSpan(column: 0, row: 0, columnCount: size.columns, rowCount: size.rows)
     }
 
+    /// Frames of every single cell, row by row from the top-left.
+    public func cellRects() -> [CGRect] {
+        (0..<size.rows).flatMap { row in
+            (0..<size.columns).map { column in
+                rect(for: CellSpan(column: column, row: row, columnCount: 1, rowCount: 1))
+            }
+        }
+    }
+
     public func contains(_ span: CellSpan) -> Bool {
         span.column >= 0 && span.row >= 0 && span.columnCount >= 1 && span.rowCount >= 1
             && span.column + span.columnCount <= size.columns && span.row + span.rowCount <= size.rows

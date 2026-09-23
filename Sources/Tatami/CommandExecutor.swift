@@ -10,6 +10,8 @@ final class CommandExecutor<System: WindowSystem> {
     private(set) var gridState: GridState
     /// Called after a grid size changes, for persistence.
     var onGridStateChange: (GridState) -> Void = { _ in }
+    /// Called after every grid adjustment, even at the size limit, to show the grid.
+    var onGridAdjusted: (Grid, Display) -> Void = { _, _ in }
 
     init(system: System, config: Config = .default, gridState: GridState = GridState()) {
         self.system = system
@@ -60,6 +62,7 @@ final class CommandExecutor<System: WindowSystem> {
     private func adjustGrid(_ display: Display, columns: Int = 0, rows: Int = 0) -> Bool {
         let before = gridState.size(for: display.id, default: config.defaultGrid)
         let after = gridState.adjust(display.id, columns: columns, rows: rows, default: config.defaultGrid)
+        onGridAdjusted(Grid(size: after, display: display, gaps: config.gaps), display)
         guard after != before else { return false }
         onGridStateChange(gridState)
         return true

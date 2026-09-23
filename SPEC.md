@@ -27,6 +27,7 @@ hotkeys with vim-style `hjkl` navigation.
   grid command snaps it to the nearest cell span, then applies the command.
 - **Changing the grid** (columns/rows ±) affects only the focused window's
   display and never moves existing windows; it only affects later commands.
+  The new grid flashes briefly on that display (also when already at a limit).
 - **Gaps:** outer margin and inner gap, configurable, default 8pt each.
 
 ## 3. Commands and default bindings

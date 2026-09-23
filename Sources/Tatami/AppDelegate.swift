@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var problemItems: [NSMenuItem] = []
     private let files = SettingsFiles.standard
     private lazy var executor = CommandExecutor(system: AXWindowSystem(), gridState: files.loadState())
+    private let gridFlash = GridFlash()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setUpStatusItem()
@@ -19,6 +20,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             } catch {
                 NSLog("Tatami: failed to save state: \(error)")
             }
+        }
+        executor.onGridAdjusted = { [gridFlash] grid, display in
+            gridFlash.show(grid, on: display)
         }
         reloadConfig()
     }

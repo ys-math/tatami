@@ -102,7 +102,12 @@ struct CommandExecutorTests {
     @Test func gridAtLimitReportsNoChange() {
         let (executor, _) = executor(window: CGRect(x: 10, y: 30, width: 100, height: 100))
         executor.config.defaultGrid = GridSize(columns: 1, rows: 1)
+        var shown: [(Grid, Display)] = []
+        executor.onGridAdjusted = { shown.append(($0, $1)) }
         #expect(!executor.execute(.gridColumnsDecrease))
+        // The grid is still shown so the user sees the limit was reached.
+        #expect(shown.map(\.0.size) == [GridSize(columns: 1, rows: 1)])
+        #expect(shown.map(\.1.id) == ["main"])
     }
 }
 

@@ -1,16 +1,30 @@
 import AppKit
-import Carbon.HIToolbox
+import TatamiCore
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private let accessibilityItem = NSMenuItem()
-    private let executor = CommandExecutor(system: AXWindowSystem())
+    private let problemsSeparator = NSMenuItem.separator()
+    private var problemItems: [NSMenuItem] = []
+    private let files = SettingsFiles.standard
+    private lazy var executor = CommandExecutor(system: AXWindowSystem(), gridState: files.loadState())
+    private let gridFlash = GridFlash()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setUpStatusItem()
         Accessibility.requestTrust()
-        registerHotKeys()
+        executor.onGridStateChange = { [files] state in
+            do {
+                try files.saveState(state)
+            } catch {
+                NSLog("Tatami: failed to save state: \(error)")
+            }
+        }
+        executor.onGridAdjusted = { [gridFlash] grid, display in
+            gridFlash.show(grid, on: display)
+        }
+        reloadConfig()
     }
 
     private func setUpStatusItem() {
@@ -20,9 +34,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         let menu = NSMenu()
         menu.delegate = self
+        menu.autoenablesItems = false
         accessibilityItem.target = self
         accessibilityItem.action = #selector(openAccessibilitySettings)
         menu.addItem(accessibilityItem)
+        menu.addItem(.separator())
+        menu.addItem(item("Open Config", #selector(openConfig), key: ","))
+        menu.addItem(item("Reload Config", #selector(reloadConfigFromMenu), key: "r"))
+        problemsSeparator.isHidden = true
+        menu.addItem(problemsSeparator)
         menu.addItem(.separator())
         menu.addItem(
             NSMenuItem(title: "Quit Tatami", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
@@ -30,17 +50,72 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         updateAccessibilityItem()
     }
 
-    private func registerHotKeys() {
-        // Phase 1: a single hard-coded binding proving the end-to-end path.
-        do {
-            try HotKeyCenter.shared.register(keyCode: kVK_Return, modifiers: [.control, .option]) {
-                [executor] in
-                executor.execute(.maximize)
+    private func item(_ title: String, _ action: Selector, key: String) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
+        item.target = self
+        return item
+    }
+
+    // MARK: - Config
+
+    /// Loads the config and re-registers hotkeys. On error the previous
+    /// config stays active and the error is shown in the menu.
+    private func reloadConfig() {
+        var problems: [String] = []
+        switch files.loadConfig() {
+        case .success(let config):
+            executor.config = config
+        case .failure(let error):
+            problems.append("Config error: \(error)")
+        }
+        problems += registerHotKeys(executor.config.bindings)
+        showProblems(problems)
+    }
+
+    /// Returns a message for each binding that could not be registered.
+    private func registerHotKeys(_ bindings: [Action: Hotkey]) -> [String] {
+        HotKeyCenter.shared.unregisterAll()
+        var problems: [String] = []
+        for (action, hotkey) in bindings.sorted(by: { $0.key.rawValue < $1.key.rawValue }) {
+            do {
+                try HotKeyCenter.shared.register(hotkey) { [executor] in
+                    executor.execute(action)
+                }
+            } catch {
+                problems.append("\(hotkey) (\(action.rawValue)) is unavailable — used by another app?")
             }
-        } catch {
-            NSLog("Tatami: failed to register hotkey: \(error)")
+        }
+        return problems
+    }
+
+    private func showProblems(_ problems: [String]) {
+        guard let menu = statusItem.menu else { return }
+        problemItems.forEach(menu.removeItem)
+        problemItems = problems.map { message in
+            let item = NSMenuItem(title: "⚠︎ \(message)", action: nil, keyEquivalent: "")
+            item.isEnabled = false
+            return item
+        }
+        let index = menu.index(of: problemsSeparator) + 1
+        for (offset, item) in problemItems.enumerated() {
+            menu.insertItem(item, at: index + offset)
+        }
+        problemsSeparator.isHidden = problems.isEmpty
+        for problem in problems {
+            NSLog("Tatami: \(problem)")
         }
     }
+
+    @objc private func openConfig() {
+        try? files.writeDefaultConfigIfMissing()
+        NSWorkspace.shared.open(files.configURL)
+    }
+
+    @objc private func reloadConfigFromMenu() {
+        reloadConfig()
+    }
+
+    // MARK: - Accessibility
 
     private func updateAccessibilityItem() {
         if Accessibility.isTrusted {

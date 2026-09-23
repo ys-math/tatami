@@ -8,12 +8,26 @@ public struct Config: Sendable, Equatable {
     public var defaultGrid: GridSize = .default
     public var outerGap: Double = 8
     public var innerGap: Double = 8
+    /// Resizes never make a window smaller than this.
+    public var minimumWindowSize = Size(width: 100, height: 60)
     /// Resolved bindings: only enabled actions are present.
     public var bindings: [Action: Hotkey]
 
     public var gaps: Gaps { Gaps(outer: outerGap, inner: innerGap) }
 
     public static let `default` = Config()
+
+    public struct Size: Codable, Sendable, Equatable {
+        public var width: Double
+        public var height: Double
+
+        public init(width: Double, height: Double) {
+            self.width = width
+            self.height = height
+        }
+
+        public var cgSize: CGSize { CGSize(width: width, height: height) }
+    }
 
     public init() {
         bindings = Action.defaultBindings.mapValues { try! Hotkey(parsing: $0) }
@@ -44,6 +58,7 @@ extension Config {
         var defaultGrid: GridSize?
         var outerGap: Double?
         var innerGap: Double?
+        var minimumWindowSize: Size?
         var bindings: [String: String?]?
     }
 
@@ -60,6 +75,10 @@ extension Config {
         if let outer = file.outerGap { config.outerGap = outer }
         if let inner = file.innerGap { config.innerGap = inner }
         guard config.outerGap >= 0, config.innerGap >= 0 else { throw .invalidValue("gaps must not be negative") }
+        if let size = file.minimumWindowSize { config.minimumWindowSize = size }
+        guard config.minimumWindowSize.width >= 0, config.minimumWindowSize.height >= 0 else {
+            throw .invalidValue("minimumWindowSize must not be negative")
+        }
 
         for (name, value) in file.bindings ?? [:] {
             guard let action = Action(rawValue: name) else { throw .unknownAction(name) }
@@ -87,6 +106,7 @@ extension Config {
             defaultGrid: Config.default.defaultGrid,
             outerGap: Config.default.outerGap,
             innerGap: Config.default.innerGap,
+            minimumWindowSize: Config.default.minimumWindowSize,
             bindings: Dictionary(uniqueKeysWithValues: Action.defaultBindings.map { ($0.rawValue, $1) }))
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]

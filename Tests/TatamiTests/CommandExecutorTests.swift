@@ -10,6 +10,8 @@ final class FakeWindowSystem: WindowSystem {
     var frames: [Int: CGRect]
     var focused: Int?
     var screens: [Display]
+    /// Simulates apps that refuse to become narrower than this.
+    var minimumWidths: [Int: CGFloat] = [:]
 
     init(frames: [Int: CGRect], focused: Int?, screens: [Display]) {
         self.frames = frames
@@ -18,8 +20,13 @@ final class FakeWindowSystem: WindowSystem {
     }
 
     func focusedWindow() -> Int? { focused }
+    func windows() -> [Int] { frames.keys.sorted() }
     func frame(of window: Int) -> CGRect? { frames[window] }
     func setFrame(_ frame: CGRect, of window: Int) -> Bool {
+        var frame = frame
+        if let minimum = minimumWidths[window], frame.width < minimum {
+            frame.size.width = minimum
+        }
         frames[window] = frame
         return true
     }
@@ -108,6 +115,66 @@ struct CommandExecutorTests {
         // The grid is still shown so the user sees the limit was reached.
         #expect(shown.map(\.0.size) == [GridSize(columns: 1, rows: 1)])
         #expect(shown.map(\.1.id) == ["main"])
+    }
+}
+
+@MainActor
+struct ResizeExecutorTests {
+    let main = Display(
+        id: "main", frame: CGRect(x: 0, y: 0, width: 1016, height: 540),
+        visibleFrame: CGRect(x: 0, y: 24, width: 1016, height: 516))
+    let external = Display(
+        id: "ext", frame: CGRect(x: 1016, y: 0, width: 2560, height: 1440),
+        visibleFrame: CGRect(x: 1016, y: 0, width: 2560, height: 1440))
+    /// Main display grid: 4x2 over x 8–1008; columns 8–252, 260–504, 512–756, 764–1008.
+    var grid: Grid { Grid(size: .default, display: main, gaps: Gaps(outer: 8, inner: 8)) }
+
+    private func span(_ column: Int, _ columns: Int) -> CGRect {
+        grid.rect(for: CellSpan(column: column, row: 0, columnCount: columns, rowCount: 2))
+    }
+
+    @Test func joinedResizeMovesNeighboursOnTheSameDisplayOnly() {
+        let otherDisplay = CGRect(x: 1100, y: 100, width: 500, height: 500)
+        let system = FakeWindowSystem(
+            frames: [1: span(0, 2), 2: span(2, 2), 3: otherDisplay], focused: 1, screens: [main, external])
+        let executor = CommandExecutor(system: system)
+
+        #expect(executor.execute(.resizeRight))
+        #expect(system.frames[1]?.maxX == 756)
+        #expect(system.frames[2]?.minX == 764 && system.frames[2]?.maxX == 1008)
+        #expect(system.frames[3] == otherDisplay)
+    }
+
+    @Test func refusedResizeIsRevertedForEveryWindow() {
+        let system = FakeWindowSystem(frames: [1: span(0, 2), 2: span(2, 2)], focused: 1, screens: [main])
+        system.minimumWidths[2] = 400  // B cannot shrink to one column (244pt).
+        let executor = CommandExecutor(system: system)
+
+        #expect(!executor.execute(.resizeRight))
+        #expect(system.frames[1] == span(0, 2))
+        #expect(system.frames[2] == span(2, 2))
+    }
+
+    @Test func separateResizeIgnoresNeighbours() {
+        let system = FakeWindowSystem(frames: [1: span(0, 2), 2: span(2, 2)], focused: 1, screens: [main])
+        let executor = CommandExecutor(system: system)
+
+        #expect(executor.execute(.growRight))
+        #expect(system.frames[1]?.maxX == 756)
+        #expect(system.frames[2] == span(2, 2))
+
+        #expect(executor.execute(.shrinkRight))
+        #expect(executor.execute(.shrinkRight))
+        #expect(system.frames[1]?.maxX == 252)
+    }
+
+    @Test func minimumWindowSizeFromConfig() {
+        let system = FakeWindowSystem(frames: [1: span(0, 2), 2: span(2, 2)], focused: 1, screens: [main])
+        let executor = CommandExecutor(system: system)
+        executor.config.minimumWindowSize = Config.Size(width: 300, height: 60)
+        #expect(!executor.execute(.resizeRight))
+        #expect(!executor.execute(.shrinkRight))
+        #expect(system.frames[1] == span(0, 2))
     }
 }
 

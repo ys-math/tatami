@@ -6,10 +6,12 @@ import TatamiCore
 /// The AX-backed implementation is `AXWindowSystem`; tests use a fake.
 @MainActor
 protocol WindowSystem {
-    associatedtype Window
+    associatedtype Window: Hashable
 
     /// The focused window of the frontmost application, if any.
     func focusedWindow() -> Window?
+    /// Visible, non-minimized standard windows on the current Space.
+    func windows() -> [Window]
     func frame(of window: Window) -> CGRect?
     /// Returns `false` if the window rejected the change.
     @discardableResult

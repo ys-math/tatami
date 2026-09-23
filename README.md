@@ -41,7 +41,8 @@ the build script uses it automatically.
 
 Joined resize follows tmux: the key is the direction the boundary moves. It
 uses the window's right (bottom) boundary when that lies inside the display,
-otherwise its left (top) one. Windows whose edges meet within `innerGap + 2pt`
+otherwise its left (top) one; a full-width (full-height) window shrinks from
+the far edge, so `h` pulls its right edge left. Windows whose edges meet within `innerGap + 2pt`
 are joined, and collinear boundaries (like the middle line of a 2×2 layout)
 move as one.
 

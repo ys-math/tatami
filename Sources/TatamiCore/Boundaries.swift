@@ -100,7 +100,8 @@ public enum Boundaries {
 
     /// Resize with the tmux-style rule: `direction` is where the edge moves.
     /// Uses the focused window's right (bottom) edge if it lies inside the
-    /// grid, otherwise its left (top) one. When `joined`, every window on the
+    /// grid, otherwise its left (top) one; a window spanning the whole axis
+    /// shrinks from the edge opposite `direction`. When `joined`, every window on the
     /// boundary through that edge moves with it; otherwise only the focused
     /// window's edge moves.
     public static func joinedResize<ID: Hashable>(
@@ -116,7 +117,9 @@ public enum Boundaries {
         } else if axis.lo(frame) > axis.lo(grid.area) + tolerance {
             highEdge = false
         } else {
-            return nil  // Spans the whole axis: no boundary to move.
+            // Spans the whole axis: shrink by moving the far edge in `direction`
+            // (h pulls the right edge left, l pulls the left edge right).
+            highEdge = !direction.isForward
         }
         guard
             let boundary = boundary(

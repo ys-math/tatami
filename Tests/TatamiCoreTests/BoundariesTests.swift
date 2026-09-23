@@ -80,8 +80,36 @@ struct BoundariesTests {
         let twice = try #require(
             Boundaries.joinedResize("A", .right, frames: once, grid: grid, minimumSize: noMinimum))
         #expect(twice["A"]?.maxX == 1130)
-        // Now spanning the full width: nothing to move horizontally.
-        #expect(Boundaries.joinedResize("A", .right, frames: twice, grid: grid, minimumSize: noMinimum) == nil)
+    }
+
+    @Test(arguments: [true, false])
+    func fullWidthWindowShrinksFromTheFarEdge(joined: Bool) throws {
+        let full = ["A": span(0, 0, 4, 2)]
+        let left = try #require(
+            Boundaries.joinedResize("A", .left, frames: full, grid: grid, minimumSize: noMinimum, joined: joined))
+        #expect(left["A"] == span(0, 0, 3, 2))
+        let right = try #require(
+            Boundaries.joinedResize("A", .right, frames: full, grid: grid, minimumSize: noMinimum, joined: joined))
+        #expect(right["A"] == span(1, 0, 3, 2))
+        let up = try #require(
+            Boundaries.joinedResize("A", .up, frames: full, grid: grid, minimumSize: noMinimum, joined: joined))
+        #expect(up["A"] == span(0, 0, 4, 1))
+        let down = try #require(
+            Boundaries.joinedResize("A", .down, frames: full, grid: grid, minimumSize: noMinimum, joined: joined))
+        #expect(down["A"] == span(0, 1, 4, 1))
+    }
+
+    @Test func fullWidthWindowStillMovesItsNeighboursVertically() throws {
+        // Top full-width window over two bottom windows: j moves the horizontal line with both below.
+        let taller = Grid(size: GridSize(columns: 4, rows: 4), area: grid.area, innerGap: 10)
+        func cells(_ column: Int, _ row: Int, _ columns: Int, _ rows: Int) -> CGRect {
+            taller.rect(for: CellSpan(column: column, row: row, columnCount: columns, rowCount: rows))
+        }
+        let frames = ["T": cells(0, 0, 4, 2), "L": cells(0, 2, 2, 2), "R": cells(2, 2, 2, 2)]
+        let result = try #require(
+            Boundaries.joinedResize("T", .down, frames: frames, grid: taller, minimumSize: noMinimum))
+        #expect(result["T"] == cells(0, 0, 4, 3))
+        #expect(result["L"] == cells(0, 3, 2, 1) && result["R"] == cells(2, 3, 2, 1))
     }
 
     @Test func distantWindowsAreNotJoined() throws {

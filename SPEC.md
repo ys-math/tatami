@@ -78,6 +78,8 @@ Grid limits: columns and rows are clamped to `1...24`.
     display, otherwise its **left** boundary.
   - `j`/`k`: move the **bottom** boundary if inside the display, otherwise the
     **top**.
+  - A window spanning the whole axis shrinks from the far edge: `h` pulls the
+    right edge left, `l` the left edge right (likewise `k`/`j`).
   - If the chosen edge has no joined neighbour, only the focused window's edge
     moves.
 - **Separate resize (`⌃⌥⌘ hjkl`)** uses the same tmux-style edge choice but

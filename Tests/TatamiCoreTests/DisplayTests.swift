@@ -46,10 +46,27 @@ struct DisplayTests {
 }
 
 struct PresetsTests {
+    let display = Display(
+        id: "D", frame: CGRect(x: 0, y: 0, width: 1000, height: 800),
+        visibleFrame: CGRect(x: 0, y: 25, width: 1000, height: 775))
+    let gaps = Gaps(outer: 8, inner: 10)
+
     @Test func maximizeInsetsVisibleFrameByOuterGap() {
-        let display = Display(
-            id: "D", frame: CGRect(x: 0, y: 0, width: 1000, height: 800),
-            visibleFrame: CGRect(x: 0, y: 25, width: 1000, height: 775))
-        #expect(Presets.maximize(on: display, outerGap: 8) == CGRect(x: 8, y: 33, width: 984, height: 759))
+        #expect(Presets.maximize(on: display, gaps: gaps) == CGRect(x: 8, y: 33, width: 984, height: 759))
+    }
+
+    @Test func halvesAreSeparatedByInnerGap() {
+        let left = Presets.leftHalf(on: display, gaps: gaps)
+        let right = Presets.rightHalf(on: display, gaps: gaps)
+        #expect(left == CGRect(x: 8, y: 33, width: 487, height: 759))
+        #expect(right == CGRect(x: 505, y: 33, width: 487, height: 759))
+        #expect(right.minX - left.maxX == 10)
+    }
+
+    @Test func centerKeepsSizeAndShrinksToFit() {
+        let small = Presets.center(CGRect(x: 0, y: 0, width: 400, height: 300), on: display, gaps: gaps)
+        #expect(small == CGRect(x: 300, y: 262.5, width: 400, height: 300))
+        let huge = Presets.center(CGRect(x: 0, y: 0, width: 5000, height: 300), on: display, gaps: gaps)
+        #expect(huge.width == 984 && huge.minX == 8)
     }
 }

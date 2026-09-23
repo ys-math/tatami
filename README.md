@@ -34,8 +34,17 @@ the build script uses it automatically.
 | `⌃⌥ Return` | Maximize |
 | `⌃⌥ c` | Center |
 | `⌃⌥ s` | Split the window's cells in half, in place |
+| `⌃⌥⇧ h/j/k/l` | Joined resize: move the window's boundary left/down/up/right, resizing the windows on the other side with it |
+| `⌃⌥⌘ h/j/k/l` | Grow the window's left/bottom/top/right edge (neighbours untouched) |
+| `⌃⌥⌘⇧ h/j/k/l` | Shrink the window's left/bottom/top/right edge (neighbours untouched) |
 | `⌃⌥ -` / `⌃⌥ =` | Fewer / more grid columns on this display |
 | `⌃⌥⇧ -` / `⌃⌥⇧ =` | Fewer / more grid rows on this display |
+
+Joined resize follows tmux: the key is the direction the boundary moves. It
+uses the window's right (bottom) boundary when that lies inside the display,
+otherwise its left (top) one. Windows whose edges meet within `innerGap + 2pt`
+are joined, and collinear boundaries (like the middle line of a 2×2 layout)
+move as one.
 
 ## Configuration
 
@@ -48,6 +57,7 @@ optional; a binding set to `null` is disabled.
   "defaultGrid": { "columns": 4, "rows": 2 },
   "outerGap": 8,
   "innerGap": 8,
+  "minimumWindowSize": { "width": 100, "height": 60 },
   "bindings": {
     "maximize": "ctrl+alt+return",
     "center": null

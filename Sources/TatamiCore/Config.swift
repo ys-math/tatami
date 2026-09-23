@@ -107,7 +107,9 @@ extension Config {
             outerGap: Config.default.outerGap,
             innerGap: Config.default.innerGap,
             minimumWindowSize: Config.default.minimumWindowSize,
-            bindings: Dictionary(uniqueKeysWithValues: Action.defaultBindings.map { ($0.rawValue, $1) }))
+            // Unbound actions are listed as null so they are easy to discover.
+            bindings: Dictionary(
+                uniqueKeysWithValues: Action.allCases.map { ($0.rawValue, Action.defaultBindings[$0]) }))
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         return try! encoder.encode(file)

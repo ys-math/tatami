@@ -31,7 +31,14 @@ struct HotkeyTests {
         for string in Action.defaultBindings.values {
             _ = try Hotkey(parsing: string)
         }
-        #expect(Set(Action.defaultBindings.keys) == Set(Action.allCases))
+    }
+
+    @Test func perEdgeGrowAndShrinkAreUnboundByDefault() {
+        let unbound = Set(Action.allCases).subtracting(Action.defaultBindings.keys)
+        #expect(
+            unbound == [
+                .growLeft, .growDown, .growUp, .growRight, .shrinkLeft, .shrinkDown, .shrinkUp, .shrinkRight,
+            ])
     }
 }
 
@@ -46,6 +53,19 @@ struct ConfigTests {
 
     @Test func defaultFileRoundTrips() throws {
         #expect(try Config.decode(from: Config.defaultFileContents()) == Config.default)
+    }
+
+    @Test func defaultFileListsUnboundActionsAsNull() throws {
+        let json = try JSONSerialization.jsonObject(with: Config.defaultFileContents()) as? [String: Any]
+        let bindings = try #require(json?["bindings"] as? [String: Any])
+        #expect(bindings.count == Action.allCases.count)
+        #expect(bindings["growLeft"] is NSNull)
+        #expect(bindings["resizeAloneLeft"] as? String == "ctrl+alt+cmd+h")
+    }
+
+    @Test func unboundActionsCanBeBound() throws {
+        let config = try decode(#"{"bindings": {"growLeft": "ctrl+alt+cmd+shift+h"}}"#)
+        #expect(config.bindings[.growLeft] == (try Hotkey(parsing: "ctrl+alt+cmd+shift+h")))
     }
 
     @Test func overridesFieldsAndBindings() throws {

@@ -129,6 +129,34 @@ struct BoundariesTests {
 
     // MARK: Separate resize
 
+    @Test func aloneResizeUsesTheTmuxRuleButIgnoresNeighbours() throws {
+        let frames = ["A": span(0, 0, 2, 2), "B": span(2, 0, 2, 2)]
+        // A's right edge is inside the display: l grows A, h shrinks it. B is untouched.
+        let grown = try #require(
+            Boundaries.joinedResize("A", .right, frames: frames, grid: grid, minimumSize: noMinimum, joined: false))
+        #expect(Set(grown.keys) == ["A"])
+        #expect(grown["A"]?.maxX == 870)
+        let shrunk = try #require(
+            Boundaries.joinedResize("A", .left, frames: frames, grid: grid, minimumSize: noMinimum, joined: false))
+        #expect(shrunk["A"]?.maxX == 350)
+
+        // B touches the right side of the display: its left edge moves instead (h grows, l shrinks).
+        let bGrown = try #require(
+            Boundaries.joinedResize("B", .left, frames: frames, grid: grid, minimumSize: noMinimum, joined: false))
+        #expect(Set(bGrown.keys) == ["B"])
+        #expect(bGrown["B"]?.minX == 360 && bGrown["B"]?.maxX == 1130)
+        let bShrunk = try #require(
+            Boundaries.joinedResize("B", .right, frames: frames, grid: grid, minimumSize: noMinimum, joined: false))
+        #expect(bShrunk["B"]?.minX == 880)
+    }
+
+    @Test func aloneResizeCanReachTheDisplayEdge() throws {
+        let frames = ["A": span(0, 0, 3, 2), "B": span(3, 0, 1, 2)]
+        let result = try #require(
+            Boundaries.joinedResize("A", .right, frames: frames, grid: grid, minimumSize: noMinimum, joined: false))
+        #expect(result["A"]?.maxX == 1130)
+    }
+
     @Test func growAndShrinkEachEdge() {
         let frame = span(1, 0, 2, 1)  // x 360–870
         #expect(Boundaries.resizeEdge(frame, .left, grow: true, grid: grid, minimumSize: noMinimum)?.minX == 100)

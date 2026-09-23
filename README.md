@@ -35,8 +35,7 @@ the build script uses it automatically.
 | `⌃⌥ c` | Center |
 | `⌃⌥ s` | Split the window's cells in half, in place |
 | `⌃⌥⇧ h/j/k/l` | Joined resize: move the window's boundary left/down/up/right, resizing the windows on the other side with it |
-| `⌃⌥⌘ h/j/k/l` | Grow the window's left/bottom/top/right edge (neighbours untouched) |
-| `⌃⌥⌘⇧ h/j/k/l` | Shrink the window's left/bottom/top/right edge (neighbours untouched) |
+| `⌃⌥⌘ h/j/k/l` | Separate resize: same rule as joined resize, but only the focused window changes |
 | `⌃⌥ -` / `⌃⌥ =` | Fewer / more grid columns on this display |
 | `⌃⌥⇧ -` / `⌃⌥⇧ =` | Fewer / more grid rows on this display |
 
@@ -45,6 +44,11 @@ uses the window's right (bottom) boundary when that lies inside the display,
 otherwise its left (top) one. Windows whose edges meet within `innerGap + 2pt`
 are joined, and collinear boundaries (like the middle line of a 2×2 layout)
 move as one.
+
+Unbound by default: `growLeft/Down/Up/Right` and `shrinkLeft/Down/Up/Right`
+move one named edge of the focused window, for when you need the left or top
+edge of a window that does not touch the display's side. Bind them in
+`config.json` if you want them.
 
 ## Configuration
 

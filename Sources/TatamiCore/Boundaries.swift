@@ -98,11 +98,14 @@ public enum Boundaries {
         return result
     }
 
-    /// Joined resize with the tmux-style rule: `direction` is where the
-    /// boundary moves. Uses the focused window's right (bottom) boundary if it
-    /// lies inside the grid, otherwise its left (top) one.
+    /// Resize with the tmux-style rule: `direction` is where the edge moves.
+    /// Uses the focused window's right (bottom) edge if it lies inside the
+    /// grid, otherwise its left (top) one. When `joined`, every window on the
+    /// boundary through that edge moves with it; otherwise only the focused
+    /// window's edge moves.
     public static func joinedResize<ID: Hashable>(
-        _ focused: ID, _ direction: Direction, frames: [ID: CGRect], grid: Grid, minimumSize: CGSize
+        _ focused: ID, _ direction: Direction, frames: [ID: CGRect], grid: Grid, minimumSize: CGSize,
+        joined: Bool = true
     ) -> [ID: CGRect]? {
         guard let frame = frames[focused] else { return nil }
         let axis = Axis(direction)
@@ -117,7 +120,8 @@ public enum Boundaries {
         }
         guard
             let boundary = boundary(
-                of: focused, highEdge: highEdge, axis: axis, frames: frames, innerGap: grid.innerGap)
+                of: focused, highEdge: highEdge, axis: axis, frames: joined ? frames : [focused: frame],
+                innerGap: grid.innerGap)
         else { return nil }
         return move(boundary, forward: direction.isForward, frames: frames, grid: grid, minimumSize: minimumSize)
     }

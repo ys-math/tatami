@@ -6,10 +6,12 @@ public enum Action: String, Sendable, CaseIterable, Codable {
     case gridColumnsDecrease, gridColumnsIncrease
     case gridRowsDecrease, gridRowsIncrease
     case resizeLeft, resizeDown, resizeUp, resizeRight
+    case resizeAloneLeft, resizeAloneDown, resizeAloneUp, resizeAloneRight
     case growLeft, growDown, growUp, growRight
     case shrinkLeft, shrinkDown, shrinkUp, shrinkRight
 
-    /// Default key bindings (see SPEC.md §3).
+    /// Default key bindings (see SPEC.md §3). Actions missing here are
+    /// unbound by default but can be bound in `config.json`.
     public static let defaultBindings: [Action: String] = [
         .moveLeft: "ctrl+alt+h",
         .moveDown: "ctrl+alt+j",
@@ -28,13 +30,9 @@ public enum Action: String, Sendable, CaseIterable, Codable {
         .resizeDown: "ctrl+alt+shift+j",
         .resizeUp: "ctrl+alt+shift+k",
         .resizeRight: "ctrl+alt+shift+l",
-        .growLeft: "ctrl+alt+cmd+h",
-        .growDown: "ctrl+alt+cmd+j",
-        .growUp: "ctrl+alt+cmd+k",
-        .growRight: "ctrl+alt+cmd+l",
-        .shrinkLeft: "ctrl+alt+cmd+shift+h",
-        .shrinkDown: "ctrl+alt+cmd+shift+j",
-        .shrinkUp: "ctrl+alt+cmd+shift+k",
-        .shrinkRight: "ctrl+alt+cmd+shift+l",
+        .resizeAloneLeft: "ctrl+alt+cmd+h",
+        .resizeAloneDown: "ctrl+alt+cmd+j",
+        .resizeAloneUp: "ctrl+alt+cmd+k",
+        .resizeAloneRight: "ctrl+alt+cmd+l",
     ]
 }

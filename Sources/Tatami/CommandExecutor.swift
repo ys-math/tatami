@@ -51,6 +51,10 @@ final class CommandExecutor<System: WindowSystem> {
         case .resizeDown: return joinedResize(window, current, .down, display: display, grid: grid)
         case .resizeUp: return joinedResize(window, current, .up, display: display, grid: grid)
         case .resizeRight: return joinedResize(window, current, .right, display: display, grid: grid)
+        case .resizeAloneLeft: return resizeAlone(window, current, .left, grid: grid)
+        case .resizeAloneDown: return resizeAlone(window, current, .down, grid: grid)
+        case .resizeAloneUp: return resizeAlone(window, current, .up, grid: grid)
+        case .resizeAloneRight: return resizeAlone(window, current, .right, grid: grid)
         case .growLeft: return resizeEdge(window, current, .left, grow: true, grid: grid)
         case .growDown: return resizeEdge(window, current, .down, grow: true, grid: grid)
         case .growUp: return resizeEdge(window, current, .up, grow: true, grid: grid)
@@ -92,7 +96,17 @@ final class CommandExecutor<System: WindowSystem> {
         return apply(targets, originals: frames)
     }
 
-    /// Moves one edge of the focused window only.
+    /// Tmux-style resize of the focused window only, ignoring neighbours.
+    private func resizeAlone(_ window: System.Window, _ current: CGRect, _ direction: Direction, grid: Grid) -> Bool {
+        guard
+            let targets = Boundaries.joinedResize(
+                window, direction, frames: [window: current], grid: grid,
+                minimumSize: config.minimumWindowSize.cgSize, joined: false)
+        else { return false }
+        return apply(targets, originals: [window: current])
+    }
+
+    /// Moves one named edge of the focused window only.
     private func resizeEdge(
         _ window: System.Window, _ current: CGRect, _ edge: Direction, grow: Bool, grid: Grid
     ) -> Bool {

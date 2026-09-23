@@ -39,8 +39,8 @@ disables a binding.
 |---|---|---|
 | Move one cell ←↓↑→ | `⌃⌥ h/j/k/l` | Crossing a display edge jumps to the adjacent display (§6) |
 | Joined resize | `⌃⌥⇧ h/j/k/l` | Moves a boundary; see §4 |
-| Separate grow | `⌃⌥⌘ h/j/k/l` | Grows the named edge outward; neighbours ignored |
-| Separate shrink | `⌃⌥⌘⇧ h/j/k/l` | Pulls the named edge inward; neighbours ignored |
+| Separate resize | `⌃⌥⌘ h/j/k/l` | Same tmux-style rule as joined resize; neighbours ignored |
+| Grow / shrink named edge | unbound | `growLeft`… / `shrinkLeft`…; bindable in config |
 | Left / right half | `⌃⌥ [` / `⌃⌥ ]` | Preset, grid-independent |
 | Maximize | `⌃⌥ Return` | Preset |
 | Center | `⌃⌥ c` | Preset: keeps size, centers on display |
@@ -80,8 +80,13 @@ Grid limits: columns and rows are clamped to `1...24`.
     **top**.
   - If the chosen edge has no joined neighbour, only the focused window's edge
     moves.
-- **Separate resize** (`⌃⌥⌘` grow / `⌃⌥⌘⇧` shrink) moves only the focused
-  window's named edge, ignoring neighbours (may create gaps or overlaps).
+- **Separate resize (`⌃⌥⌘ hjkl`)** uses the same tmux-style edge choice but
+  moves only the focused window's edge, ignoring neighbours (may create gaps or
+  overlaps); the edge may reach the display border. So one modifier set both
+  grows and shrinks.
+- **Per-edge grow/shrink** (`growLeft`…, `shrinkLeft`…) move one named edge
+  outward/inward. Unbound by default; they cover the left/top edge of a window
+  that does not touch the display's side.
 
 ## 5. Modal overlays
 

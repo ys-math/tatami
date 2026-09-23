@@ -168,6 +168,18 @@ struct ResizeExecutorTests {
         #expect(system.frames[1]?.maxX == 252)
     }
 
+    @Test func resizeAloneGrowsAndShrinksWithOneModifierSet() {
+        let system = FakeWindowSystem(frames: [1: span(0, 2), 2: span(2, 2)], focused: 1, screens: [main])
+        let executor = CommandExecutor(system: system)
+
+        #expect(executor.execute(.resizeAloneRight))
+        #expect(system.frames[1]?.maxX == 756)
+        #expect(system.frames[2] == span(2, 2))
+        #expect(executor.execute(.resizeAloneLeft))
+        #expect(executor.execute(.resizeAloneLeft))
+        #expect(system.frames[1]?.maxX == 252)
+    }
+
     @Test func minimumWindowSizeFromConfig() {
         let system = FakeWindowSystem(frames: [1: span(0, 2), 2: span(2, 2)], focused: 1, screens: [main])
         let executor = CommandExecutor(system: system)

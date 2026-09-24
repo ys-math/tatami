@@ -332,6 +332,60 @@ struct MultiDisplayExecutorTests {
     }
 }
 
+@MainActor
+struct SwapExecutorTests {
+    let main = Display(
+        id: "main", frame: CGRect(x: 0, y: 0, width: 1016, height: 540),
+        visibleFrame: CGRect(x: 0, y: 24, width: 1016, height: 516))
+    var grid: Grid { Grid(size: .default, display: main, gaps: Gaps(outer: 8, inner: 8)) }
+
+    private func cells(_ column: Int, _ row: Int, _ columns: Int, _ rows: Int) -> CGRect {
+        grid.rect(for: CellSpan(column: column, row: row, columnCount: columns, rowCount: rows))
+    }
+
+    /// 1 | (2 / 3)
+    private func system(focused: Int) -> FakeWindowSystem {
+        FakeWindowSystem(
+            frames: [1: cells(0, 0, 2, 2), 2: cells(2, 0, 2, 1), 3: cells(2, 1, 2, 1)], focused: focused,
+            screens: [main])
+    }
+
+    @Test func swapInADirection() {
+        let system = system(focused: 3)
+        #expect(CommandExecutor(system: system).execute(.swapUp))
+        #expect(system.frames[3] == cells(2, 0, 2, 1) && system.frames[2] == cells(2, 1, 2, 1))
+        #expect(system.frames[1] == cells(0, 0, 2, 2))
+    }
+
+    @Test func swapWithNoNeighbourDoesNothing() {
+        let system = system(focused: 1)
+        #expect(!CommandExecutor(system: system).execute(.swapLeft))
+    }
+
+    @Test func rotateClockwise() {
+        let system = system(focused: 1)
+        #expect(CommandExecutor(system: system).execute(.rotateClockwise))
+        #expect(system.frames[1] == cells(2, 0, 2, 1))
+        #expect(system.frames[2] == cells(2, 1, 2, 1))
+        #expect(system.frames[3] == cells(0, 0, 2, 2))
+    }
+
+    @Test func swapWithMain() {
+        let system = system(focused: 3)
+        #expect(CommandExecutor(system: system).execute(.swapWithMain))
+        #expect(system.frames[3] == cells(0, 0, 2, 2) && system.frames[1] == cells(2, 1, 2, 1))
+    }
+
+    @Test func refusedSwapIsReverted() {
+        // Wide window 1 beside a one-column window 2; 1 refuses to be narrower than 400pt.
+        let system = FakeWindowSystem(
+            frames: [1: cells(0, 0, 3, 2), 2: cells(3, 0, 1, 2)], focused: 1, screens: [main])
+        system.minimumWidths[1] = 400
+        #expect(!CommandExecutor(system: system).execute(.swapRight))
+        #expect(system.frames[1] == cells(0, 0, 3, 2) && system.frames[2] == cells(3, 0, 1, 2))
+    }
+}
+
 struct SettingsFilesTests {
     private func temporaryFiles() -> SettingsFiles {
         SettingsFiles(directory: FileManager.default.temporaryDirectory.appending(path: "tatami-tests-\(UUID())"))

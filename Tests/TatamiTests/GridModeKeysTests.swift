@@ -42,3 +42,16 @@ struct BoundaryModeKeysTests {
         #expect(BoundaryModeKeys.input(keyCode: 0x00, characters: "A", shift: true) == .character("a"))
     }
 }
+
+struct WindowCommandKeysTests {
+    @Test func keys() {
+        #expect(WindowCommandKeys.action(keyCode: 0x04, shift: false) == .swapLeft)
+        #expect(WindowCommandKeys.action(keyCode: 0x26, shift: false) == .swapDown)
+        #expect(WindowCommandKeys.action(keyCode: 0x28, shift: false) == .swapUp)
+        #expect(WindowCommandKeys.action(keyCode: 0x25, shift: false) == .swapRight)
+        #expect(WindowCommandKeys.action(keyCode: 0x0F, shift: false) == .rotateClockwise)
+        #expect(WindowCommandKeys.action(keyCode: 0x0F, shift: true) == .rotateCounterclockwise)
+        #expect(WindowCommandKeys.action(keyCode: 0x2E, shift: false) == .swapWithMain)
+        #expect(WindowCommandKeys.action(keyCode: 0x35, shift: false) == nil)
+    }
+}

@@ -37,6 +37,11 @@ final class FakeWindowSystem: WindowSystem {
         return true
     }
     func displays() -> [Display] { screens }
+    func focus(_ window: Int) -> Bool {
+        guard frames[window] != nil else { return false }
+        focused = window
+        return true
+    }
 }
 
 @MainActor
@@ -392,6 +397,43 @@ struct SwapExecutorTests {
         system.minimumWidths[1] = 400
         #expect(!CommandExecutor(system: system).execute(.swapRight))
         #expect(system.frames[1] == cells(0, 0, 3, 2) && system.frames[2] == cells(3, 0, 1, 2))
+    }
+}
+
+@MainActor
+struct FocusExecutorTests {
+    let main = Display(
+        id: "main", frame: CGRect(x: 0, y: 0, width: 1016, height: 540),
+        visibleFrame: CGRect(x: 0, y: 24, width: 1016, height: 516))
+    let external = Display(
+        id: "ext", frame: CGRect(x: 1016, y: 0, width: 2560, height: 1440),
+        visibleFrame: CGRect(x: 1016, y: 0, width: 2560, height: 1440))
+
+    @Test func focusMovesToTheNeighbourThenAcrossDisplays() {
+        let left = CGRect(x: 8, y: 32, width: 496, height: 500)
+        let right = CGRect(x: 512, y: 32, width: 496, height: 500)
+        let onExternal = CGRect(x: 1100, y: 100, width: 800, height: 600)
+        let system = FakeWindowSystem(
+            frames: [1: left, 2: right, 3: onExternal], focused: 1, screens: [main, external])
+        let executor = CommandExecutor(system: system)
+
+        #expect(executor.execute(.focusRight))
+        #expect(system.focused == 2)
+        #expect(executor.execute(.focusRight))  // At the display edge: onto the external display.
+        #expect(system.focused == 3)
+        #expect(executor.execute(.focusLeft))
+        #expect(system.focused == 2)
+        #expect(!executor.execute(.focusUp))
+        #expect(system.focused == 2)
+    }
+
+    @Test func focusDoesNotMoveWindows() {
+        let frames: [Int: CGRect] = [
+            1: CGRect(x: 8, y: 32, width: 496, height: 500), 2: CGRect(x: 512, y: 32, width: 496, height: 500),
+        ]
+        let system = FakeWindowSystem(frames: frames, focused: 1, screens: [main])
+        CommandExecutor(system: system).execute(.focusRight)
+        #expect(system.frames == frames)
     }
 }
 

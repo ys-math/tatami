@@ -21,4 +21,7 @@ protocol WindowSystem {
     @discardableResult
     func setFrame(_ frame: CGRect, of window: Window) -> Bool
     func displays() -> [Display]
+    /// Raises the window and brings its app to the front. Returns `false` if it failed.
+    @discardableResult
+    func focus(_ window: Window) -> Bool
 }

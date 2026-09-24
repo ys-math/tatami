@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 import TatamiCore
 
 @MainActor
@@ -14,6 +15,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private lazy var boundaryMode = BoundaryModeController(executor: executor)
     private lazy var windowMode = WindowModeController(executor: executor)
     private lazy var focusHints = FocusHintController(executor: executor)
+    private let launchAtLoginItem = NSMenuItem()
+    private var configWatcher: ConfigWatcher?
+    /// The config file contents last loaded, so saves of `state.json` or
+    /// unchanged rewrites in the same directory don't trigger a reload.
+    private var loadedConfigData: Data?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setUpStatusItem()
@@ -32,6 +38,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             gridFlash.show(label: layout.displayName, on: display)
         }
         reloadConfig()
+        configWatcher = ConfigWatcher(directory: files.directory) { [weak self] in
+            self?.reloadConfigIfChanged()
+        }
+        configWatcher?.start()
     }
 
     private func setUpStatusItem() {
@@ -51,10 +61,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         problemsSeparator.isHidden = true
         menu.addItem(problemsSeparator)
         menu.addItem(.separator())
+        launchAtLoginItem.target = self
+        launchAtLoginItem.action = #selector(toggleLaunchAtLogin)
+        menu.addItem(launchAtLoginItem)
+        menu.addItem(.separator())
         menu.addItem(
             NSMenuItem(title: "Quit Tatami", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         statusItem.menu = menu
         updateAccessibilityItem()
+        updateLaunchAtLoginItem()
     }
 
     private func item(_ title: String, _ action: Selector, key: String) -> NSMenuItem {
@@ -68,6 +83,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// Loads the config and re-registers hotkeys. On error the previous
     /// config stays active and the error is shown in the menu.
     private func reloadConfig() {
+        loadedConfigData = try? Data(contentsOf: files.configURL)
         var problems: [String] = []
         switch files.loadConfig() {
         case .success(let config):
@@ -77,6 +93,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         problems += registerHotKeys(executor.config.bindings)
         showProblems(problems)
+    }
+
+    /// Called by the directory watcher: reloads only if `config.json` changed.
+    private func reloadConfigIfChanged() {
+        let data = try? Data(contentsOf: files.configURL)
+        guard data != loadedConfigData else { return }
+        reloadConfig()
     }
 
     /// Returns a message for each binding that could not be registered.
@@ -146,6 +169,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         reloadConfig()
     }
 
+    // MARK: - Launch at login
+
+    private func updateLaunchAtLoginItem() {
+        switch SMAppService.mainApp.status {
+        case .enabled:
+            launchAtLoginItem.title = "Launch at Login"
+            launchAtLoginItem.state = .on
+        case .requiresApproval:
+            launchAtLoginItem.title = "Launch at Login — Approve in System Settings…"
+            launchAtLoginItem.state = .mixed
+        default:
+            launchAtLoginItem.title = "Launch at Login"
+            launchAtLoginItem.state = .off
+        }
+    }
+
+    @objc private func toggleLaunchAtLogin() {
+        let service = SMAppService.mainApp
+        do {
+            switch service.status {
+            case .enabled:
+                try service.unregister()
+            case .requiresApproval:
+                SMAppService.openSystemSettingsLoginItems()
+            default:
+                try service.register()
+            }
+        } catch {
+            NSLog("Tatami: launch at login failed: \(error)")
+            NSSound.beep()
+        }
+        updateLaunchAtLoginItem()
+    }
+
     // MARK: - Accessibility
 
     private func updateAccessibilityItem() {
@@ -164,5 +221,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func menuWillOpen(_ menu: NSMenu) {
         updateAccessibilityItem()
+        updateLaunchAtLoginItem()
     }
 }

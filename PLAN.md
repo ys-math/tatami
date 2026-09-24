@@ -94,6 +94,12 @@ Added after Phase 7 at the owner's request.
 
 ## Phase 9 — Polish (`phase-9/polish`)
 
-- Launch at login (`SMAppService`), config file watching, menu error display,
-  README usage docs, make `swift format lint` blocking.
+- Launch at login (`SMAppService`) toggle in the menu, including the
+  "approve in System Settings" state.
+- Config file watching: the config directory is watched (atomic saves replace
+  the file), events are debounced, and a reload happens only when
+  `config.json`'s contents changed.
+- README: install, troubleshooting, settings reference.
+- `swift format lint --strict` is blocking in CI and `make lint`.
+- Menu error display already exists since Phase 2.
 - **Test:** daily use.

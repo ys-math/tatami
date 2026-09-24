@@ -91,7 +91,8 @@ final class BoundaryModeController<System: WindowSystem> {
         panel.setFrame(Coordinates.flip(display.frame, primaryHeight: primaryHeight), display: false)
         let view = BoundaryModeView(frame: NSRect(origin: .zero, size: display.frame.size))
         view.model = BoundaryModeView.Model(
-            items: session.state.items, labels: session.state.labels, selectedIndex: session.state.selectedIndex,
+            items: session.state.items, anchors: session.state.anchors, labels: session.state.labels,
+            selectedIndex: session.state.selectedIndex,
             typed: session.state.typed, windows: Array(session.state.frames.values), innerGap: executor.config.innerGap,
             origin: display.frame.origin)
         panel.contentView = view

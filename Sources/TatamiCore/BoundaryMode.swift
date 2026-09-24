@@ -5,14 +5,6 @@ public enum BoundaryItem<ID: Hashable>: Equatable {
     case boundary(Boundary<ID>)
     case crosspoint(Crosspoint<ID>)
 
-    /// Where the item is drawn and labelled.
-    public var anchor: CGPoint {
-        switch self {
-        case .boundary(let boundary): boundary.midpoint
-        case .crosspoint(let crosspoint): crosspoint.point
-        }
-    }
-
     public var isCrosspoint: Bool {
         if case .crosspoint = self { true } else { false }
     }
@@ -62,6 +54,9 @@ public enum BoundaryModeEffect<ID: Hashable>: Equatable {
 public struct BoundaryModeState<ID: Hashable> {
     public private(set) var frames: [ID: CGRect]
     public private(set) var items: [BoundaryItem<ID>] = []
+    /// Where each item's label goes: a crosspoint's point, or the middle of a
+    /// boundary's longest stretch between crosspoints.
+    public private(set) var anchors: [CGPoint] = []
     public private(set) var selectedIndex = 0
     public private(set) var typed = ""
     public let grid: Grid
@@ -113,7 +108,7 @@ public struct BoundaryModeState<ID: Hashable> {
     /// the boundaries, keeping the nearest item of the same kind selected.
     public mutating func refresh(frames: [ID: CGRect]) {
         self.frames = frames
-        let previous = selected
+        let previous = (anchor: anchors[selectedIndex], kind: selected.kind)
         enumerate()
         guard !items.isEmpty else { return }
         selectedIndex = nearest(to: previous.anchor, kind: previous.kind)
@@ -125,13 +120,13 @@ public struct BoundaryModeState<ID: Hashable> {
                 line, to: target, frames: frames, innerGap: grid.innerGap, minimumSize: minimumSize)
         else { return .ignored }
 
-        let previous = selected
-        var anchor = previous.anchor
+        let kind = selected.kind
+        var anchor = anchors[selectedIndex]
         if line.axis == .horizontal { anchor.x = target } else { anchor.y = target }
         frames.merge(targets) { $1 }
         enumerate()
         if !items.isEmpty {
-            selectedIndex = nearest(to: anchor, kind: previous.kind)
+            selectedIndex = nearest(to: anchor, kind: kind)
         }
         return .apply(targets)
     }
@@ -155,6 +150,9 @@ public struct BoundaryModeState<ID: Hashable> {
     private mutating func enumerate() {
         let found = Boundaries.all(frames: frames, grid: grid)
         items = found.boundaries.map(BoundaryItem.boundary) + found.crosspoints.map(BoundaryItem.crosspoint)
+        let junctions = found.crosspoints.map(\.point)
+        anchors =
+            found.boundaries.map { Boundaries.labelPoint(for: $0, junctions: junctions) } + junctions
         typed = ""
     }
 
@@ -166,18 +164,18 @@ public struct BoundaryModeState<ID: Hashable> {
             if case .boundary(let boundary) = items[$0] { boundary.members.contains(focused) } else { false }
         }
         let pool = candidates.isEmpty ? Array(items.indices) : candidates
-        return pool.min { distance(items[$0], to: center) < distance(items[$1], to: center) } ?? 0
+        return pool.min { distance($0, to: center) < distance($1, to: center) } ?? 0
     }
 
     private func nearest(to point: CGPoint, kind: Int) -> Int {
         let sameKind = items.indices.filter { items[$0].kind == kind }
         let pool = sameKind.isEmpty ? Array(items.indices) : sameKind
-        return pool.min { hypot(items[$0].anchor, point) < hypot(items[$1].anchor, point) } ?? 0
+        return pool.min { hypot(anchors[$0], point) < hypot(anchors[$1], point) } ?? 0
     }
 
     /// Distance from `point` to the item: to the line segment for a boundary.
-    private func distance(_ item: BoundaryItem<ID>, to point: CGPoint) -> CGFloat {
-        guard case .boundary(let boundary) = item else { return hypot(item.anchor, point) }
+    private func distance(_ index: Int, to point: CGPoint) -> CGFloat {
+        guard case .boundary(let boundary) = items[index] else { return hypot(anchors[index], point) }
         let along = boundary.axis.perpendicular
         let alongValue = along == .horizontal ? point.x : point.y
         let acrossValue = along == .horizontal ? point.y : point.x

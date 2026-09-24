@@ -41,11 +41,45 @@ struct BoundaryEnumerationTests {
         #expect(found.crosspoints.map(\.point) == [CGPoint(x: 615, y: 305)])
     }
 
-    @Test func quartersShareFullLengthLines() {
+    @Test func quartersSplitIntoMinimalSegmentsMeetingAtOneDot() throws {
         let found = Boundaries.all(frames: quarters, grid: grid)
-        #expect(found.boundaries.count == 2)
-        #expect(found.boundaries.allSatisfy { $0.members.count == 4 })
+        #expect(found.boundaries.count == 4)
+        #expect(found.boundaries.allSatisfy { $0.members.count == 2 })
+        let dot = try #require(found.crosspoints.first)
         #expect(found.crosspoints.count == 1)
+        #expect(dot.point == CGPoint(x: 615, y: 305))
+        #expect(dot.verticals.count == 2 && dot.horizontals.count == 2)
+        // The dot still moves whole lines.
+        #expect(dot.vertical.members == ["TL", "TR", "BL", "BR"])
+    }
+
+    @Test func tJunctionVerticalCannotBeSplit() throws {
+        // A's whole right edge faces both B and C, so they stay one boundary.
+        let vertical = try #require(
+            Boundaries.all(frames: tJunction, grid: grid).boundaries.first { $0.axis == .horizontal })
+        #expect(vertical.after == ["B", "C"])
+    }
+
+    @Test func staggeredLayoutKeepsTheConnectedLineWhole() {
+        // Quarters after moving only the top segment right to x = 875.
+        var staggered = quarters
+        staggered["TL"] = cells(0, 0, 3, 2)
+        staggered["TR"] = cells(3, 0, 1, 2)
+        let found = Boundaries.all(frames: staggered, grid: grid)
+        let verticals = found.boundaries.filter { $0.axis == .horizontal }
+        #expect(Set(verticals.map(\.position)) == [615, 875])
+        // TL faces BL and BR across the horizontal line, TR faces BR: one boundary.
+        let horizontals = found.boundaries.filter { $0.axis == .vertical }
+        #expect(horizontals.count == 1)
+        #expect(horizontals.first?.members.count == 4)
+    }
+
+    @Test func labelsStayOffCrosspoints() throws {
+        let found = Boundaries.all(frames: tJunction, grid: grid)
+        let vertical = try #require(found.boundaries.first { $0.axis == .horizontal })
+        let label = Boundaries.labelPoint(for: vertical, junctions: found.crosspoints.map(\.point))
+        // The line runs y 50–560 with the T at 305: the label sits mid-way along one half.
+        #expect(label == CGPoint(x: 615, y: 177.5))
     }
 
     @Test func separateWindowsHaveNoBoundaries() {
@@ -127,7 +161,27 @@ struct BoundaryModeStateTests {
         }
         #expect(verticalMove["TL"]?.maxY == 430 && verticalMove["BL"]?.minY == 440)
         #expect(state.selected.isCrosspoint)
-        #expect(state.selected.anchor == CGPoint(x: 355, y: 435))
+        #expect(state.anchors[state.selectedIndex] == CGPoint(x: 355, y: 435))
+    }
+
+    @Test func aMinimalSegmentMovesOnlyItsOwnWindows() throws {
+        var state = try #require(makeState(quarters, focused: "TL"))
+        let top = try #require(
+            state.items.firstIndex {
+                if case .boundary(let b) = $0 { b.axis == .horizontal && b.members == ["TL", "TR"] } else { false }
+            })
+        _ = state.handle(.character(Character(state.labels[top])))
+        guard case .apply(let targets) = state.handle(.move(.right)) else {
+            Issue.record("expected apply")
+            return
+        }
+        #expect(Set(targets.keys) == ["TL", "TR"])
+        #expect(targets["TL"]?.maxX == 870 && targets["TR"]?.minX == 880)
+    }
+
+    @Test func anchorsNeverOverlap() throws {
+        let state = try #require(makeState(tJunction, focused: "A"))
+        #expect(Set(state.anchors.map { "\($0.x),\($0.y)" }).count == state.anchors.count)
     }
 
     @Test func tabCyclesAndLabelsSelect() throws {

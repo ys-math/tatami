@@ -117,13 +117,17 @@ when the mode was entered. `Esc` or a mouse click cancels.
 
 ### 5.2 Boundary mode (`⌃⌥ b`)
 
-- Draws every boundary and crosspoint on the display with hint labels. The
-  boundary nearest the focused window is selected initially.
+- Draws every joined boundary and crosspoint on the focused window's display
+  with hint labels (same alphabet as grid mode). The boundary of the focused
+  window nearest its center is selected initially. If no windows meet, the
+  mode does not open (beep).
 - Typing a label selects it; `Tab`/`⇧Tab` cycles.
-- `hjkl` moves the selection by one grid step (a vertical boundary ignores
-  `j/k`, a horizontal one ignores `h/l`; a crosspoint accepts all four).
-  `HJKL` moves by the fine step.
-- `Return` or `Esc` exits (moves are applied live).
+- `hjkl` moves the selection to the next grid line (a vertical boundary
+  ignores `j/k`, a horizontal one ignores `h/l`; a crosspoint accepts all
+  four). `HJKL` moves by the fine step (`fineStep`, default 10pt).
+- Moves are applied live with the same read-back/revert as joined resize; the
+  overlay then redraws from the windows' real frames.
+- `Return` or `Esc` exits.
 
 ## 6. Multi-monitor
 

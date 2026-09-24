@@ -45,6 +45,8 @@ the build script uses it automatically.
 | `⌃⌥⌘ a` | Auto-arrange every display (each with its last layout) |
 | `⌃⌥ .` / `⌃⌥ ,` | Send the window to the next / previous display, keeping its relative cells |
 | `⌃⌥ w` | Window mode: swap and rotate windows (see below) |
+| `⌃⌘ h/j/k/l` | Focus the window to the left/below/above/right (crosses displays) |
+| `⌃⌥ f` | Label every window; type a label to focus that window |
 
 Joined resize follows tmux: the key is the direction the boundary moves. It
 uses the window's right (bottom) boundary when that lies inside the display,

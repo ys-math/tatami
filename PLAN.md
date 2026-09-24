@@ -87,6 +87,8 @@ Added after Phase 7 at the owner's request.
 - `⌃⌥ w` window mode (open until Esc): labels select windows; `r`/`R` rotate
   the selection (or all), `hjkl` swap with neighbour, `m` swap with main.
   Unbound actions for each.
+- Focus: `⌃⌘ hjkl` directional (crossing displays), `⌃⌥ f` hint labels on
+  every window of every display.
 - **Test:** 2×2 segments move independently; T-shape labels are separate;
   swap/rotate/main keep the layout.
 

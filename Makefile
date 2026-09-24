@@ -23,7 +23,7 @@ install: app
 	open ~/Applications/Tatami.app
 
 lint:
-	swift format lint --recursive Sources Tests Package.swift
+	swift format lint --strict --recursive Sources Tests Package.swift
 
 format:
 	swift format --in-place --recursive Sources Tests Package.swift

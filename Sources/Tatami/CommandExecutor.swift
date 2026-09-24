@@ -132,7 +132,7 @@ final class CommandExecutor<System: WindowSystem> {
     // MARK: - Swap and rotate
 
     /// Frames of the windows that may trade places on `display` (the auto-arrange set).
-    private func swappableFrames(on display: Display, focused: System.Window) -> [System.Window: CGRect] {
+    func swappableFrames(on display: Display, focused: System.Window) -> [System.Window: CGRect] {
         var frames: [System.Window: CGRect] = [:]
         for window in arrangeableWindows(on: display, focused: focused) {
             frames[window] = system.frame(of: window)
@@ -151,6 +151,19 @@ final class CommandExecutor<System: WindowSystem> {
     private func rotate(_ display: Display, focused: System.Window, clockwise: Bool) -> Bool {
         let frames = swappableFrames(on: display, focused: focused)
         guard let targets = Swaps.rotate(frames, clockwise: clockwise) else { return false }
+        return apply(targets, originals: frames)
+    }
+
+    /// Rotates just `group` one slot around its own center (two windows: a swap).
+    @discardableResult
+    func rotate(group: Set<System.Window>, clockwise: Bool) -> Bool {
+        var frames: [System.Window: CGRect] = [:]
+        for window in group {
+            frames[window] = system.frame(of: window)
+        }
+        guard frames.count == group.count, let targets = Swaps.rotate(frames, clockwise: clockwise) else {
+            return false
+        }
         return apply(targets, originals: frames)
     }
 

@@ -376,6 +376,15 @@ struct SwapExecutorTests {
         #expect(system.frames[3] == cells(0, 0, 2, 2) && system.frames[1] == cells(2, 1, 2, 1))
     }
 
+    @Test func rotateAGroupLeavesOtherWindowsAlone() {
+        let system = system(focused: 1)
+        let executor = CommandExecutor(system: system)
+        #expect(executor.rotate(group: [2, 3], clockwise: true))
+        #expect(system.frames[2] == cells(2, 1, 2, 1) && system.frames[3] == cells(2, 0, 2, 1))
+        #expect(system.frames[1] == cells(0, 0, 2, 2))
+        #expect(!executor.rotate(group: [1], clockwise: true))
+    }
+
     @Test func refusedSwapIsReverted() {
         // Wide window 1 beside a one-column window 2; 1 refuses to be narrower than 400pt.
         let system = FakeWindowSystem(

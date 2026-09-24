@@ -15,6 +15,9 @@ public enum Action: String, Sendable, CaseIterable, Codable {
     case swapLeft, swapDown, swapUp, swapRight
     case rotateClockwise, rotateCounterclockwise
     case swapWithMain
+    case focusLeft, focusDown, focusUp, focusRight
+    /// Labels on every window; typing one focuses it.
+    case focusHints
     case growLeft, growDown, growUp, growRight
     case shrinkLeft, shrinkDown, shrinkUp, shrinkRight
 
@@ -46,6 +49,11 @@ public enum Action: String, Sendable, CaseIterable, Codable {
         .sendToNextDisplay: "ctrl+alt+.",
         .sendToPreviousDisplay: "ctrl+alt+,",
         .windowCommand: "ctrl+alt+w",
+        .focusLeft: "ctrl+cmd+h",
+        .focusDown: "ctrl+cmd+j",
+        .focusUp: "ctrl+cmd+k",
+        .focusRight: "ctrl+cmd+l",
+        .focusHints: "ctrl+alt+f",
         .resizeAloneLeft: "ctrl+alt+cmd+h",
         .resizeAloneDown: "ctrl+alt+cmd+j",
         .resizeAloneUp: "ctrl+alt+cmd+k",

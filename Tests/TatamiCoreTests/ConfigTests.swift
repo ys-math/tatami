@@ -98,6 +98,9 @@ struct ConfigTests {
         #expect(throws: ConfigError.invalidValue("gaps must not be negative")) {
             try decode(#"{"outerGap": -1}"#)
         }
+        #expect(throws: ConfigError.invalidValue("fineStep must be positive")) {
+            try decode(#"{"fineStep": 0}"#)
+        }
         #expect(throws: ConfigError.self) { try decode("{ not json") }
         #expect(throws: ConfigError.self) { try decode(#"{"outerGap": "big"}"#) }
     }

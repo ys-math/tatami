@@ -12,6 +12,10 @@ public struct GridState: Codable, Sendable, Equatable {
         grids[displayID] ?? defaultSize
     }
 
+    public mutating func set(_ size: GridSize, for displayID: String) {
+        grids[displayID] = size
+    }
+
     /// Adds `delta` columns and rows to a display's grid, within `GridSize.limits`.
     /// Returns the new size.
     @discardableResult

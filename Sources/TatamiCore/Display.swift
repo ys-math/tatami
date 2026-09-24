@@ -17,6 +17,11 @@ public struct Display: Sendable, Equatable, Identifiable {
 }
 
 extension Display {
+    /// Displays in physical order: left to right, then top to bottom.
+    public static func sortedPhysically(_ displays: [Display]) -> [Display] {
+        displays.sorted { ($0.frame.minX, $0.frame.minY) < ($1.frame.minX, $1.frame.minY) }
+    }
+
     /// The display that shows the largest part of `rect`.
     /// Falls back to the display nearest to the rect's center when it is off-screen.
     public static func containing(_ rect: CGRect, in displays: [Display]) -> Display? {

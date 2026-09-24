@@ -38,6 +38,7 @@ the build script uses it automatically.
 | `⌃⌥⌘ h/j/k/l` | Separate resize: same rule as joined resize, but only the focused window changes |
 | `⌃⌥ -` / `⌃⌥ =` | Fewer / more grid columns on this display |
 | `⌃⌥⇧ -` / `⌃⌥⇧ =` | Fewer / more grid rows on this display |
+| `⌃⌥ g` | Grid mode (see below) |
 
 Joined resize follows tmux: the key is the direction the boundary moves. It
 uses the window's right (bottom) boundary when that lies inside the display,
@@ -45,6 +46,18 @@ otherwise its left (top) one; a full-width (full-height) window shrinks from
 the far edge, so `h` pulls its right edge left. Windows whose edges meet within `innerGap + 2pt`
 are joined, and collinear boundaries (like the middle line of a 2×2 layout)
 move as one.
+
+### Grid mode
+
+`⌃⌥ g` shows the grid over the focused window's display with a label in
+every cell (`q w e r` / `a s d f` on the default 4×2 grid).
+
+- Type two labels to place the window over the span between those cells
+  (`q` then `s` → top-left two-by-two block). One label and `Return` fills a
+  single cell.
+- `hjkl` moves the highlighted selection, `HJKL` resizes it, `Return` applies.
+- `-` / `=` change columns, `_` / `+` change rows, `Tab` jumps to the next
+  display, `Esc` cancels.
 
 Unbound by default: `growLeft/Down/Up/Right` and `shrinkLeft/Down/Up/Right`
 move one named edge of the focused window, for when you need the left or top

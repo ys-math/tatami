@@ -10,6 +10,8 @@ public struct Config: Sendable, Equatable {
     public var innerGap: Double = 8
     /// Resizes never make a window smaller than this.
     public var minimumWindowSize = Size(width: 100, height: 60)
+    /// Points a boundary moves per `HJKL` press in boundary mode.
+    public var fineStep: Double = 10
     /// Resolved bindings: only enabled actions are present.
     public var bindings: [Action: Hotkey]
 
@@ -59,6 +61,7 @@ extension Config {
         var outerGap: Double?
         var innerGap: Double?
         var minimumWindowSize: Size?
+        var fineStep: Double?
         var bindings: [String: String?]?
     }
 
@@ -76,6 +79,8 @@ extension Config {
         if let inner = file.innerGap { config.innerGap = inner }
         guard config.outerGap >= 0, config.innerGap >= 0 else { throw .invalidValue("gaps must not be negative") }
         if let size = file.minimumWindowSize { config.minimumWindowSize = size }
+        if let step = file.fineStep { config.fineStep = step }
+        guard config.fineStep > 0 else { throw .invalidValue("fineStep must be positive") }
         guard config.minimumWindowSize.width >= 0, config.minimumWindowSize.height >= 0 else {
             throw .invalidValue("minimumWindowSize must not be negative")
         }
@@ -107,6 +112,7 @@ extension Config {
             outerGap: Config.default.outerGap,
             innerGap: Config.default.innerGap,
             minimumWindowSize: Config.default.minimumWindowSize,
+            fineStep: Config.default.fineStep,
             // Unbound actions are listed as null so they are easy to discover.
             bindings: Dictionary(
                 uniqueKeysWithValues: Action.allCases.map { ($0.rawValue, Action.defaultBindings[$0]) }))

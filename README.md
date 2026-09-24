@@ -39,6 +39,7 @@ the build script uses it automatically.
 | `⌃⌥ -` / `⌃⌥ =` | Fewer / more grid columns on this display |
 | `⌃⌥⇧ -` / `⌃⌥⇧ =` | Fewer / more grid rows on this display |
 | `⌃⌥ g` | Grid mode (see below) |
+| `⌃⌥ b` | Boundary mode (see below) |
 
 Joined resize follows tmux: the key is the direction the boundary moves. It
 uses the window's right (bottom) boundary when that lies inside the display,
@@ -59,6 +60,18 @@ every cell (`q w e r` / `a s d f` on the default 4×2 grid).
 - `-` / `=` change columns, `_` / `+` change rows, `Tab` jumps to the next
   display, `Esc` cancels.
 
+### Boundary mode
+
+`⌃⌥ b` shows every line where windows meet on the focused window's display,
+plus the crosspoints where two lines meet, each with a label. The line
+nearest the focused window starts selected.
+
+- Type a label (or `Tab` / `⇧Tab`) to select a line or crosspoint.
+- `hjkl` moves it to the next grid line, `HJKL` by `fineStep` points (default
+  10). A vertical line ignores `j`/`k`; a crosspoint moves both ways. All
+  windows on the line resize together, live.
+- `Return` or `Esc` leaves.
+
 Unbound by default: `growLeft/Down/Up/Right` and `shrinkLeft/Down/Up/Right`
 move one named edge of the focused window, for when you need the left or top
 edge of a window that does not touch the display's side. Bind them in
@@ -76,6 +89,7 @@ optional; a binding set to `null` is disabled.
   "outerGap": 8,
   "innerGap": 8,
   "minimumWindowSize": { "width": 100, "height": 60 },
+  "fineStep": 10,
   "bindings": {
     "maximize": "ctrl+alt+return",
     "center": null

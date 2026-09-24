@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private lazy var executor = CommandExecutor(system: AXWindowSystem(), gridState: files.loadState())
     private let gridFlash = GridFlash()
     private lazy var gridMode = GridModeController(executor: executor)
+    private lazy var boundaryMode = BoundaryModeController(executor: executor)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setUpStatusItem()
@@ -90,13 +91,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func perform(_ action: Action) {
+        // Any hotkey leaves an open mode first; a mode's own hotkey toggles it.
+        let wasInGridMode = gridMode.isActive
+        let wasInBoundaryMode = boundaryMode.isActive
+        gridMode.end()
+        boundaryMode.end()
         switch action {
         case .gridMode:
-            gridMode.begin()
+            if !wasInGridMode { gridMode.begin() }
+        case .boundaryMode:
+            if !wasInBoundaryMode { boundaryMode.begin() }
         default:
-            if gridMode.isActive {
-                gridMode.end()
-            }
             executor.execute(action)
         }
     }

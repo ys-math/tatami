@@ -42,7 +42,7 @@ public enum Axis: Sendable, Hashable {
 
 extension Direction {
     /// `true` for right and down (increasing coordinates in AX space).
-    var isForward: Bool { self == .right || self == .down }
+    public var isForward: Bool { self == .right || self == .down }
 }
 
 extension Grid {

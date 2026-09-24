@@ -51,7 +51,7 @@ final class CommandExecutor<System: WindowSystem> {
         case .resizeDown: return joinedResize(window, current, .down, display: display, grid: grid)
         case .resizeUp: return joinedResize(window, current, .up, display: display, grid: grid)
         case .resizeRight: return joinedResize(window, current, .right, display: display, grid: grid)
-        case .gridMode: return false  // Modal; handled by GridModeController.
+        case .gridMode, .boundaryMode: return false  // Modal; handled by their controllers.
         case .resizeAloneLeft: return resizeAlone(window, current, .left, grid: grid)
         case .resizeAloneDown: return resizeAlone(window, current, .down, grid: grid)
         case .resizeAloneUp: return resizeAlone(window, current, .up, grid: grid)
@@ -80,14 +80,7 @@ final class CommandExecutor<System: WindowSystem> {
     private func joinedResize(
         _ window: System.Window, _ current: CGRect, _ direction: Direction, display: Display, grid: Grid
     ) -> Bool {
-        var frames: [System.Window: CGRect] = [:]
-        let displays = system.displays()
-        for other in system.windows() {
-            guard let frame = system.frame(of: other),
-                Display.containing(frame, in: displays)?.id == display.id
-            else { continue }
-            frames[other] = frame
-        }
+        var frames = frames(on: display)
         frames[window] = current
 
         guard
@@ -118,9 +111,23 @@ final class CommandExecutor<System: WindowSystem> {
         return apply([window: target], originals: [window: current])
     }
 
+    /// Frames of the standard windows whose largest part is on `display`.
+    func frames(on display: Display) -> [System.Window: CGRect] {
+        var frames: [System.Window: CGRect] = [:]
+        let displays = system.displays()
+        for window in system.windows() {
+            guard let frame = system.frame(of: window),
+                Display.containing(frame, in: displays)?.id == display.id
+            else { continue }
+            frames[window] = frame
+        }
+        return frames
+    }
+
     /// Sets several frames as one change. If any window ends up far from its
     /// target (the app refused or clamped the size), every window is put back.
-    private func apply(_ targets: [System.Window: CGRect], originals: [System.Window: CGRect]) -> Bool {
+    @discardableResult
+    func apply(_ targets: [System.Window: CGRect], originals: [System.Window: CGRect]) -> Bool {
         for (window, frame) in targets {
             system.setFrame(frame, of: window)
         }

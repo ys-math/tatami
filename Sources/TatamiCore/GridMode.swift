@@ -16,11 +16,17 @@ public enum GridLabels {
                 spatialRows[row].prefix(size.columns).map(String.init)
             }
         }
-        if size.cellCount <= alphabet.count {
-            return Array(alphabet.prefix(size.cellCount))
+        return sequence(count: size.cellCount)
+    }
+
+    /// `count` distinct labels: single characters when they suffice,
+    /// otherwise two-character labels of equal length.
+    public static func sequence(count: Int) -> [String] {
+        if count <= alphabet.count {
+            return Array(alphabet.prefix(count))
         }
         let n = alphabet.count
-        return (0..<size.cellCount).map { alphabet[$0 / n] + alphabet[$0 % n] }
+        return (0..<count).map { alphabet[$0 / n] + alphabet[$0 % n] }
     }
 }
 

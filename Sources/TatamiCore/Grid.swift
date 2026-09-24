@@ -18,6 +18,15 @@ public struct GridSize: Codable, Sendable, Hashable {
         self.rows = rows.clamped(to: Self.limits)
     }
 
+    public var cellCount: Int { columns * rows }
+
+    public func count(_ axis: Axis) -> Int { axis == .horizontal ? columns : rows }
+
+    public func contains(_ span: CellSpan) -> Bool {
+        span.column >= 0 && span.row >= 0 && span.columnCount >= 1 && span.rowCount >= 1
+            && span.column + span.columnCount <= columns && span.row + span.rowCount <= rows
+    }
+
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.init(
@@ -54,6 +63,36 @@ public struct CellSpan: Sendable, Hashable, CustomStringConvertible {
 
     public var description: String {
         "(\(column),\(row) \(columnCount)x\(rowCount))"
+    }
+
+    /// The single cell at a row-major index.
+    public static func cell(_ index: Int, in size: GridSize) -> CellSpan {
+        CellSpan(column: index % size.columns, row: index / size.columns, columnCount: 1, rowCount: 1)
+    }
+
+    /// The smallest span covering both spans.
+    public func union(_ other: CellSpan) -> CellSpan {
+        let column = min(self.column, other.column)
+        let row = min(self.row, other.row)
+        return CellSpan(
+            column: column, row: row,
+            columnCount: max(self.column + columnCount, other.column + other.columnCount) - column,
+            rowCount: max(self.row + rowCount, other.row + other.rowCount) - row)
+    }
+
+    func start(_ axis: Axis) -> Int { axis == .horizontal ? column : row }
+    func length(_ axis: Axis) -> Int { axis == .horizontal ? columnCount : rowCount }
+
+    func setting(_ axis: Axis, start: Int, length: Int) -> CellSpan {
+        var span = self
+        if axis == .horizontal {
+            span.column = start
+            span.columnCount = length
+        } else {
+            span.row = start
+            span.rowCount = length
+        }
+        return span
     }
 }
 
@@ -97,8 +136,7 @@ public struct Grid: Sendable, Equatable {
     }
 
     public func contains(_ span: CellSpan) -> Bool {
-        span.column >= 0 && span.row >= 0 && span.columnCount >= 1 && span.rowCount >= 1
-            && span.column + span.columnCount <= size.columns && span.row + span.rowCount <= size.rows
+        size.contains(span)
     }
 
     public func rect(for span: CellSpan) -> CGRect {

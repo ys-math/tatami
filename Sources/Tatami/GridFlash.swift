@@ -1,21 +1,30 @@
 import AppKit
 import TatamiCore
 
-/// Briefly shows a display's grid after its size changes.
+/// Briefly shows a display's grid after its size changes, or a short label.
 @MainActor
 final class GridFlash {
     private var panel: NSPanel?
     private var generation = 0
 
     func show(_ grid: Grid, on display: Display) {
+        show(label: "\(grid.size.columns) × \(grid.size.rows)", cells: grid.cellRects(), on: display)
+    }
+
+    /// Shows just a label, e.g. the name of the layout auto-arrange used.
+    func show(label: String, on display: Display) {
+        show(label: label, cells: [], on: display)
+    }
+
+    private func show(label: String, cells: [CGRect], on display: Display) {
         guard let primaryHeight = NSScreen.screens.first?.frame.height else { return }
         let panel = self.panel ?? makePanel()
         self.panel = panel
 
         panel.setFrame(Coordinates.flip(display.frame, primaryHeight: primaryHeight), display: false)
         let view = GridFlashView(frame: NSRect(origin: .zero, size: display.frame.size))
-        view.cells = grid.cellRects().map { $0.offsetBy(dx: -display.frame.minX, dy: -display.frame.minY) }
-        view.label = "\(grid.size.columns) × \(grid.size.rows)"
+        view.cells = cells.map { $0.offsetBy(dx: -display.frame.minX, dy: -display.frame.minY) }
+        view.label = label
         panel.contentView = view
         panel.alphaValue = 1
         panel.orderFrontRegardless()

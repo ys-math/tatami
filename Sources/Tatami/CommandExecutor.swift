@@ -1,4 +1,5 @@
 import CoreGraphics
+import Foundation
 import TatamiCore
 
 /// Turns actions into frame changes: snapshot the focused window, ask
@@ -12,6 +13,11 @@ final class CommandExecutor<System: WindowSystem> {
     var onGridStateChange: (GridState) -> Void = { _ in }
     /// Called after every grid adjustment, even at the size limit, to show the grid.
     var onGridAdjusted: (Grid, Display) -> Void = { _, _ in }
+    /// Called after auto-arrange lays out a display, to name the layout.
+    var onArranged: (Layout, Display) -> Void = { _, _ in }
+    /// The clock used for arrange cycling; replaced in tests.
+    var now: () -> Date = Date.init
+    private var arrangeHistory = ArrangeHistory<System.Window>()
 
     init(system: System, config: Config = .default, gridState: GridState = GridState()) {
         self.system = system
@@ -52,6 +58,9 @@ final class CommandExecutor<System: WindowSystem> {
         case .resizeUp: return joinedResize(window, current, .up, display: display, grid: grid)
         case .resizeRight: return joinedResize(window, current, .right, display: display, grid: grid)
         case .gridMode, .boundaryMode: return false  // Modal; handled by their controllers.
+        case .arrange: return arrange(display, focused: window, step: 1)
+        case .arrangePrevious: return arrange(display, focused: window, step: -1)
+        case .arrangeAllDisplays: return arrangeAllDisplays(focused: window)
         case .resizeAloneLeft: return resizeAlone(window, current, .left, grid: grid)
         case .resizeAloneDown: return resizeAlone(window, current, .down, grid: grid)
         case .resizeAloneUp: return resizeAlone(window, current, .up, grid: grid)
@@ -109,6 +118,65 @@ final class CommandExecutor<System: WindowSystem> {
                 current, edge, grow: grow, grid: grid, minimumSize: config.minimumWindowSize.cgSize)
         else { return false }
         return apply([window: target], originals: [window: current])
+    }
+
+    // MARK: - Auto-arrange
+
+    /// Lays out the display's eligible windows, cycling layouts on repeated presses.
+    private func arrange(_ display: Display, focused: System.Window, step: Int) -> Bool {
+        let windows = arrangeableWindows(on: display, focused: focused)
+        guard !windows.isEmpty else { return false }
+        let area = grid(for: display).area
+        let layout = arrangeHistory.layout(
+            display: display.id, windows: Set(windows), available: Layout.available(for: area), step: step,
+            now: now(), timeout: config.cycleTimeout)
+        place(windows, in: area, layout: layout)
+        onArranged(layout, display)
+        return true
+    }
+
+    /// Lays out every display with its remembered layout. Windows stay on their display.
+    private func arrangeAllDisplays(focused: System.Window) -> Bool {
+        var arranged = false
+        for display in system.displays() {
+            let windows = arrangeableWindows(on: display, focused: focused)
+            guard !windows.isEmpty else { continue }
+            let area = grid(for: display).area
+            let available = Layout.available(for: area)
+            let remembered = arrangeHistory.rememberedLayout(for: display.id)
+            let layout = remembered.flatMap { available.contains($0) ? $0 : nil } ?? available[0]
+            place(windows, in: area, layout: layout)
+            arranged = true
+        }
+        return arranged
+    }
+
+    private func place(_ windows: [System.Window], in area: CGRect, layout: Layout) {
+        let frames = layout.frames(count: windows.count, in: area, gap: config.innerGap)
+        for (window, frame) in zip(windows, frames) {
+            // Each window on its own: an app that refuses its slot should not undo the others.
+            system.setFrame(frame, of: window)
+        }
+    }
+
+    /// Windows auto-arrange may move on `display`: resizable, not tiny, not
+    /// ignored; the focused window first, then front to back.
+    func arrangeableWindows(on display: Display, focused: System.Window) -> [System.Window] {
+        let displays = system.displays()
+        let minimum = config.minimumWindowSize
+        let ignored = Set(config.ignoredApps)
+        var windows = system.windows().filter { window in
+            guard let frame = system.frame(of: window),
+                Display.containing(frame, in: displays)?.id == display.id,
+                frame.width >= minimum.width, frame.height >= minimum.height,
+                system.isResizable(window)
+            else { return false }
+            return system.appIdentifier(of: window).map { !ignored.contains($0) } ?? true
+        }
+        if let index = windows.firstIndex(of: focused) {
+            windows.insert(windows.remove(at: index), at: 0)
+        }
+        return windows
     }
 
     /// Frames of the standard windows whose largest part is on `display`.

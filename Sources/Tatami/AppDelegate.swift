@@ -26,6 +26,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         executor.onGridAdjusted = { [gridFlash] grid, display in
             gridFlash.show(grid, on: display)
         }
+        executor.onArranged = { [gridFlash] layout, display in
+            gridFlash.show(label: layout.displayName, on: display)
+        }
         reloadConfig()
     }
 

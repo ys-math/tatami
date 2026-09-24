@@ -12,6 +12,10 @@ public struct Config: Sendable, Equatable {
     public var minimumWindowSize = Size(width: 100, height: 60)
     /// Points a boundary moves per `HJKL` press in boundary mode.
     public var fineStep: Double = 10
+    /// Bundle identifiers of apps auto-arrange leaves alone.
+    public var ignoredApps: [String] = []
+    /// Seconds within which pressing arrange again moves to the next layout.
+    public var cycleTimeout: Double = 3
     /// Resolved bindings: only enabled actions are present.
     public var bindings: [Action: Hotkey]
 
@@ -62,6 +66,8 @@ extension Config {
         var innerGap: Double?
         var minimumWindowSize: Size?
         var fineStep: Double?
+        var ignoredApps: [String]?
+        var cycleTimeout: Double?
         var bindings: [String: String?]?
     }
 
@@ -81,6 +87,9 @@ extension Config {
         if let size = file.minimumWindowSize { config.minimumWindowSize = size }
         if let step = file.fineStep { config.fineStep = step }
         guard config.fineStep > 0 else { throw .invalidValue("fineStep must be positive") }
+        if let apps = file.ignoredApps { config.ignoredApps = apps }
+        if let timeout = file.cycleTimeout { config.cycleTimeout = timeout }
+        guard config.cycleTimeout >= 0 else { throw .invalidValue("cycleTimeout must not be negative") }
         guard config.minimumWindowSize.width >= 0, config.minimumWindowSize.height >= 0 else {
             throw .invalidValue("minimumWindowSize must not be negative")
         }
@@ -113,6 +122,8 @@ extension Config {
             innerGap: Config.default.innerGap,
             minimumWindowSize: Config.default.minimumWindowSize,
             fineStep: Config.default.fineStep,
+            ignoredApps: Config.default.ignoredApps,
+            cycleTimeout: Config.default.cycleTimeout,
             // Unbound actions are listed as null so they are easy to discover.
             bindings: Dictionary(
                 uniqueKeysWithValues: Action.allCases.map { ($0.rawValue, Action.defaultBindings[$0]) }))

@@ -10,8 +10,12 @@ protocol WindowSystem {
 
     /// The focused window of the frontmost application, if any.
     func focusedWindow() -> Window?
-    /// Visible, non-minimized standard windows on the current Space.
+    /// Visible, non-minimized standard windows on the current Space,
+    /// frontmost first.
     func windows() -> [Window]
+    func isResizable(_ window: Window) -> Bool
+    /// The bundle identifier of the window's app.
+    func appIdentifier(of window: Window) -> String?
     func frame(of window: Window) -> CGRect?
     /// Returns `false` if the window rejected the change.
     @discardableResult

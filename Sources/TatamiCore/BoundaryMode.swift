@@ -149,11 +149,22 @@ public struct BoundaryModeState<ID: Hashable> {
 
     private mutating func enumerate() {
         let found = Boundaries.all(frames: frames, grid: grid)
-        items = found.boundaries.map(BoundaryItem.boundary) + found.crosspoints.map(BoundaryItem.crosspoint)
+        let boundaries = Self.selectable(found.boundaries, crosspoints: found.crosspoints)
+        items = boundaries.map(BoundaryItem.boundary) + found.crosspoints.map(BoundaryItem.crosspoint)
         let junctions = found.crosspoints.map(\.point)
-        anchors =
-            found.boundaries.map { Boundaries.labelPoint(for: $0, junctions: junctions) } + junctions
+        anchors = boundaries.map { Boundaries.labelPoint(for: $0, junctions: junctions) } + junctions
         typed = ""
+    }
+
+    /// Boundaries worth selecting: a boundary is left out when a crosspoint
+    /// already moves exactly it along its axis (as in a T shape, where the
+    /// dot covers both lines), since the dot does the same and more.
+    static func selectable(_ boundaries: [Boundary<ID>], crosspoints: [Crosspoint<ID>]) -> [Boundary<ID>] {
+        boundaries.filter { boundary in
+            !crosspoints.contains { crosspoint in
+                (boundary.axis == .horizontal ? crosspoint.verticals : crosspoint.horizontals) == [boundary]
+            }
+        }
     }
 
     /// Prefers boundaries of the focused window, nearest to its center.

@@ -6,7 +6,8 @@ import Foundation
 public enum Swaps {
     /// The window next to `focused` in `direction`: its center lies beyond
     /// that edge and it shares part of the edge. Nearest first, then the
-    /// longest shared stretch.
+    /// longest shared stretch, then closest to the focused window's center,
+    /// then the top / left one — so ties never depend on dictionary order.
     public static func neighbor<ID: Hashable>(of focused: ID, _ direction: Direction, frames: [ID: CGRect]) -> ID? {
         guard let frame = frames[focused] else { return nil }
         let axis = Axis(direction)
@@ -20,10 +21,14 @@ public enum Swaps {
                 && (direction.isForward ? center(rect) > axis.hi(frame) : center(rect) < axis.lo(frame))
                 && Boundaries.overlap(frame, rect, along: along) > 0
         }
-        return candidates.min { a, b in
-            (max(gap(a.value), 0), -Boundaries.overlap(frame, a.value, along: along))
-                < (max(gap(b.value), 0), -Boundaries.overlap(frame, b.value, along: along))
-        }?.key
+        let focusedCenter = (along.lo(frame) + along.hi(frame)) / 2
+        func key(_ rect: CGRect) -> (CGFloat, CGFloat, CGFloat, CGFloat) {
+            (
+                max(gap(rect), 0), -Boundaries.overlap(frame, rect, along: along),
+                abs((along.lo(rect) + along.hi(rect)) / 2 - focusedCenter), along.lo(rect)
+            )
+        }
+        return candidates.min { key($0.value) < key($1.value) }?.key
     }
 
     /// New frames after `a` and `b` trade places.

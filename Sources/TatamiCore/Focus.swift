@@ -22,10 +22,11 @@ public enum FocusNavigation {
         let axis = Axis(direction)
         let along = axis.perpendicular
         let center = (along.lo(frame) + along.hi(frame)) / 2
-        func key(_ rect: CGRect) -> (CGFloat, CGFloat) {
+        // Ties go to the top / left window, never to dictionary order.
+        func key(_ rect: CGRect) -> (CGFloat, CGFloat, CGFloat) {
             let fromEdge =
                 direction.isForward ? axis.lo(rect) - axis.lo(next.frame) : axis.hi(next.frame) - axis.hi(rect)
-            return (fromEdge, abs((along.lo(rect) + along.hi(rect)) / 2 - center))
+            return (fromEdge, abs((along.lo(rect) + along.hi(rect)) / 2 - center), along.lo(rect))
         }
         return windows.filter { Display.containing($0.value, in: displays)?.id == next.id }
             .min { key($0.value) < key($1.value) }?.key

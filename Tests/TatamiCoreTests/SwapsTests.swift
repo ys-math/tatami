@@ -23,6 +23,13 @@ struct NeighborTests {
         #expect(Swaps.neighbor(of: "TL", .left, frames: quarters) == nil)
     }
 
+    @Test func tiesAreBrokenTheSameWayEveryTime() {
+        // B and C are equally near A and share equal lengths of its edge: the top one wins, always.
+        for _ in 0..<50 {
+            #expect(Swaps.neighbor(of: "A", .right, frames: tJunction) == "B")
+        }
+    }
+
     @Test func diagonalWindowsAreNotNeighbours() {
         #expect(Swaps.neighbor(of: "TL", .right, frames: ["TL": quarters["TL"]!, "BR": quarters["BR"]!]) == nil)
     }

@@ -67,6 +67,11 @@ final class CommandExecutor<System: WindowSystem> {
         case .rotateClockwise: return rotate(display, focused: window, clockwise: true)
         case .rotateCounterclockwise: return rotate(display, focused: window, clockwise: false)
         case .swapWithMain: return swapWithMain(window, display: display)
+        case .focusLeft: return focus(from: window, .left)
+        case .focusDown: return focus(from: window, .down)
+        case .focusUp: return focus(from: window, .up)
+        case .focusRight: return focus(from: window, .right)
+        case .focusHints: return false  // Modal; handled by FocusHintController.
         case .arrange: return arrange(display, focused: window, step: 1)
         case .arrangePrevious: return arrange(display, focused: window, step: -1)
         case .arrangeAllDisplays: return arrangeAllDisplays(focused: window)
@@ -175,6 +180,27 @@ final class CommandExecutor<System: WindowSystem> {
             let targets = Swaps.swap(window, partner, frames: frames)
         else { return false }
         return apply(targets, originals: frames)
+    }
+
+    // MARK: - Focus
+
+    /// Frames of every window on every display (current Space), for focusing.
+    func allFrames() -> [System.Window: CGRect] {
+        var frames: [System.Window: CGRect] = [:]
+        for window in system.windows() {
+            frames[window] = system.frame(of: window)
+        }
+        return frames
+    }
+
+    private func focus(from window: System.Window, _ direction: Direction) -> Bool {
+        var frames = allFrames()
+        frames[window] = system.frame(of: window)
+        guard
+            let target = FocusNavigation.next(
+                from: window, direction, windows: frames, displays: system.displays())
+        else { return false }
+        return system.focus(target)
     }
 
     // MARK: - Displays

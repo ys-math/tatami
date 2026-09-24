@@ -31,6 +31,24 @@ struct AXWindowSystem: WindowSystem {
         return ordered.sorted { $0.index < $1.index }.map(\.window)
     }
 
+    @discardableResult
+    func focus(_ window: AXUIElement) -> Bool {
+        var pid: pid_t = 0
+        guard AXUIElementGetPid(window, &pid) == .success else { return false }
+        let appElement = AXUIElementCreateApplication(pid)
+        // Make it the app's main window, raise it, then bring the app forward.
+        // Setting AXFrontmost works from a background app, where plain
+        // activation may be declined under cooperative activation.
+        AXUIElementSetAttributeValue(window, kAXMainAttribute as CFString, kCFBooleanTrue)
+        let raised = AXUIElementPerformAction(window, kAXRaiseAction as CFString) == .success
+        let frontmost =
+            AXUIElementSetAttributeValue(appElement, kAXFrontmostAttribute as CFString, kCFBooleanTrue) == .success
+        if !frontmost {
+            NSRunningApplication(processIdentifier: pid)?.activate()
+        }
+        return raised
+    }
+
     func isResizable(_ window: AXUIElement) -> Bool {
         var settable = DarwinBoolean(false)
         return AXUIElementIsAttributeSettable(window, kAXSizeAttribute as CFString, &settable) == .success

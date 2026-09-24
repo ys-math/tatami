@@ -11,6 +11,22 @@ struct AXWindowSystem: WindowSystem {
         return attribute(kAXFocusedWindowAttribute, of: appElement)
     }
 
+    func windows() -> [AXUIElement] {
+        NSWorkspace.shared.runningApplications
+            .filter { $0.activationPolicy == .regular && !$0.isHidden }
+            .flatMap { app -> [AXUIElement] in
+                let appElement = AXUIElementCreateApplication(app.processIdentifier)
+                let windows: [AXUIElement] = attribute(kAXWindowsAttribute, of: appElement) ?? []
+                return windows.filter(isStandardVisibleWindow)
+            }
+    }
+
+    private func isStandardVisibleWindow(_ window: AXUIElement) -> Bool {
+        let subrole: String? = attribute(kAXSubroleAttribute, of: window)
+        let minimized: Bool = attribute(kAXMinimizedAttribute, of: window) ?? false
+        return subrole == kAXStandardWindowSubrole && !minimized
+    }
+
     func frame(of window: AXUIElement) -> CGRect? {
         guard let positionValue: AXValue = attribute(kAXPositionAttribute, of: window),
             let sizeValue: AXValue = attribute(kAXSizeAttribute, of: window)

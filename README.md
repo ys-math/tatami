@@ -34,8 +34,22 @@ the build script uses it automatically.
 | `⌃⌥ Return` | Maximize |
 | `⌃⌥ c` | Center |
 | `⌃⌥ s` | Split the window's cells in half, in place |
+| `⌃⌥⇧ h/j/k/l` | Joined resize: move the window's boundary left/down/up/right, resizing the windows on the other side with it |
+| `⌃⌥⌘ h/j/k/l` | Separate resize: same rule as joined resize, but only the focused window changes |
 | `⌃⌥ -` / `⌃⌥ =` | Fewer / more grid columns on this display |
 | `⌃⌥⇧ -` / `⌃⌥⇧ =` | Fewer / more grid rows on this display |
+
+Joined resize follows tmux: the key is the direction the boundary moves. It
+uses the window's right (bottom) boundary when that lies inside the display,
+otherwise its left (top) one; a full-width (full-height) window shrinks from
+the far edge, so `h` pulls its right edge left. Windows whose edges meet within `innerGap + 2pt`
+are joined, and collinear boundaries (like the middle line of a 2×2 layout)
+move as one.
+
+Unbound by default: `growLeft/Down/Up/Right` and `shrinkLeft/Down/Up/Right`
+move one named edge of the focused window, for when you need the left or top
+edge of a window that does not touch the display's side. Bind them in
+`config.json` if you want them.
 
 ## Configuration
 
@@ -48,6 +62,7 @@ optional; a binding set to `null` is disabled.
   "defaultGrid": { "columns": 4, "rows": 2 },
   "outerGap": 8,
   "innerGap": 8,
+  "minimumWindowSize": { "width": 100, "height": 60 },
   "bindings": {
     "maximize": "ctrl+alt+return",
     "center": null

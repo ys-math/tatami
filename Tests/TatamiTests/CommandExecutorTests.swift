@@ -107,7 +107,7 @@ struct CommandExecutorTests {
         #expect(saved?.grids == ["ext": GridSize(columns: 5, rows: 3)])
 
         // The next command on that display uses the new grid.
-        #expect(executor.execute(.moveLeft))
+        #expect(executor.execute(.moveRight))
         let newGrid = grid(GridSize(columns: 5, rows: 3), on: external)
         #expect(newGrid.rect(for: newGrid.span(nearest: system.frames[1]!)) == system.frames[1])
     }
@@ -272,6 +272,63 @@ struct ArrangeExecutorTests {
         let externalArea = external.visibleFrame.insetBy(dx: 8, dy: 8)
         let expected = Layout.balancedGrid.frames(count: 2, in: externalArea, gap: 8)
         #expect(Set([system.frames[2]!, system.frames[3]!]) == Set(expected))
+    }
+}
+
+@MainActor
+struct MultiDisplayExecutorTests {
+    /// Main: 4x2 cells over x 8–1008 (columns 8–252 … 764–1008), y 32–532.
+    let main = Display(
+        id: "main", frame: CGRect(x: 0, y: 0, width: 1016, height: 540),
+        visibleFrame: CGRect(x: 0, y: 24, width: 1016, height: 516))
+    /// To the right of main.
+    let external = Display(
+        id: "ext", frame: CGRect(x: 1016, y: 0, width: 2560, height: 1440),
+        visibleFrame: CGRect(x: 1016, y: 0, width: 2560, height: 1440))
+
+    private func grid(_ display: Display, _ size: GridSize = .default) -> Grid {
+        Grid(size: size, display: display, gaps: Gaps(outer: 8, inner: 8))
+    }
+
+    private func cell(_ display: Display, _ column: Int, _ row: Int, size: GridSize = .default) -> CGRect {
+        grid(display, size).rect(for: CellSpan(column: column, row: row, columnCount: 1, rowCount: 1))
+    }
+
+    @Test func movingPastTheEdgeCrossesToTheAdjacentDisplay() {
+        let system = FakeWindowSystem(frames: [1: cell(main, 3, 1)], focused: 1, screens: [main, external])
+        let executor = CommandExecutor(system: system)
+        executor.setGridSize(GridSize(columns: 6, rows: 3), for: external)
+
+        #expect(executor.execute(.moveRight))
+        #expect(system.frames[1] == cell(external, 0, 2, size: GridSize(columns: 6, rows: 3)))
+        // And back again.
+        #expect(executor.execute(.moveLeft))
+        #expect(system.frames[1] == cell(main, 3, 1))
+    }
+
+    @Test func noDisplayBeyondTheEdgeIsANoOp() {
+        let system = FakeWindowSystem(frames: [1: cell(main, 0, 0)], focused: 1, screens: [main, external])
+        #expect(!CommandExecutor(system: system).execute(.moveLeft))
+        #expect(system.frames[1] == cell(main, 0, 0))
+    }
+
+    @Test func sendKeepsTheRelativeCellsAndWraps() {
+        let leftHalf = grid(main).rect(for: CellSpan(column: 0, row: 0, columnCount: 2, rowCount: 2))
+        let system = FakeWindowSystem(frames: [1: leftHalf], focused: 1, screens: [external, main])
+        let executor = CommandExecutor(system: system)
+
+        #expect(executor.execute(.sendToNextDisplay))
+        let externalLeftHalf = grid(external).rect(for: CellSpan(column: 0, row: 0, columnCount: 2, rowCount: 2))
+        #expect(system.frames[1] == externalLeftHalf)
+        #expect(executor.execute(.sendToNextDisplay))  // Wraps to the first display.
+        #expect(system.frames[1] == leftHalf)
+        #expect(executor.execute(.sendToPreviousDisplay))
+        #expect(system.frames[1] == externalLeftHalf)
+    }
+
+    @Test func sendWithOneDisplayDoesNothing() {
+        let system = FakeWindowSystem(frames: [1: cell(main, 1, 0)], focused: 1, screens: [main])
+        #expect(!CommandExecutor(system: system).execute(.sendToNextDisplay))
     }
 }
 

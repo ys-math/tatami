@@ -30,3 +30,15 @@ struct GridModeKeysTests {
         #expect(GridModeKeys.input(keyCode: 0x31, characters: " ", shift: false) == nil)
     }
 }
+
+struct BoundaryModeKeysTests {
+    @Test func keys() {
+        #expect(BoundaryModeKeys.input(keyCode: 0x04, characters: "h", shift: false) == .move(.left))
+        #expect(BoundaryModeKeys.input(keyCode: 0x25, characters: "L", shift: true) == .fineMove(.right))
+        #expect(BoundaryModeKeys.input(keyCode: 0x30, characters: "\t", shift: false) == .next)
+        #expect(BoundaryModeKeys.input(keyCode: 0x30, characters: "\t", shift: true) == .previous)
+        #expect(BoundaryModeKeys.input(keyCode: 0x24, characters: "\r", shift: false) == .exit)
+        #expect(BoundaryModeKeys.input(keyCode: 0x35, characters: "\u{1B}", shift: false) == .exit)
+        #expect(BoundaryModeKeys.input(keyCode: 0x00, characters: "A", shift: true) == .character("a"))
+    }
+}

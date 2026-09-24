@@ -44,6 +44,9 @@ the build script uses it automatically.
 | `⌃⌥⇧ a` | Previous layout |
 | `⌃⌥⌘ a` | Auto-arrange every display (each with its last layout) |
 | `⌃⌥ .` / `⌃⌥ ,` | Send the window to the next / previous display, keeping its relative cells |
+| `⌃⌥ w` then `h/j/k/l` | Swap the window with its neighbour in that direction |
+| `⌃⌥ w` then `r` / `R` | Rotate the display's windows clockwise / counter-clockwise |
+| `⌃⌥ w` then `m` | Swap the window with the main (largest) window |
 
 Joined resize follows tmux: the key is the direction the boundary moves. It
 uses the window's right (bottom) boundary when that lies inside the display,
@@ -76,8 +79,10 @@ display. Apps listed in `ignoredApps` (bundle IDs) are left alone.
 ### Boundary mode
 
 `⌃⌥ b` shows every line where windows meet on the focused window's display,
-plus the crosspoints where two lines meet, each with a label. The line
-nearest the focused window starts selected.
+split into the smallest pieces that can move on their own (the middle lines of
+a 2×2 are four segments), plus the crosspoints where lines meet, each with a
+label. Moving a crosspoint moves every line touching it. The line nearest the
+focused window starts selected.
 
 - Type a label (or `Tab` / `⇧Tab`) to select a line or crosspoint.
 - `hjkl` moves it to the next grid line, `HJKL` by `fineStep` points (default

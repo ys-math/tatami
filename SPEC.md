@@ -98,15 +98,22 @@ when the mode was entered. `Esc` or a mouse click cancels.
 
 ### 5.1 Grid mode (`⌃⌥ g`)
 
-- Draws the display's grid; each cell shows a hint label from keyboard rows
-  (`qwertyuiop`, `asdfghjkl;`, `zxcvbnm,./`, …). Grids larger than the
-  single-key alphabet use two-character labels.
-- **Labels:** typing a first label then a second selects the span between the
-  two cells and applies immediately.
+- Draws the display's grid; each cell shows a hint label. Labels never use
+  `h j k l`, `-`, `=` or the control keys. Grids up to 5×3 use the keyboard's
+  shape (`q w e r t` / `a s d f g` / `z x c v b`); larger grids use single
+  characters from `asdfgqwertyuiopzxcvbnm1234567890` while they suffice, then
+  two-character labels.
+- **Labels:** the first label selects that cell (and marks it as a corner);
+  the second label selects the span between the two cells and applies
+  immediately. `Return` after one label applies that cell.
 - **Cursor:** selection starts at the window's current (snapped) span. `hjkl`
-  moves it, `HJKL` extends it, `Return` applies.
-- `+`/`-` change columns, `⇧+`/`⇧-` change rows live (persisted).
-- `Tab` moves the selection to the next display.
+  moves it one cell; `HJKL` resizes it with the same tmux-style rule as
+  resize commands. `Return` applies. Cursor input clears a pending corner.
+- `-`/`=` change columns, `_`/`+` (⇧) change rows live (persisted); the
+  selection is remapped proportionally.
+- `Tab` moves the selection to the next display (physical order),
+  proportionally.
+- `Esc`, a click, or focusing another window cancels.
 
 ### 5.2 Boundary mode (`⌃⌥ b`)
 

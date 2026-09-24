@@ -54,6 +54,8 @@ disables a binding.
 | Arrange all displays | `⌃⌥⌘ a` | |
 | Send to next / previous display | `⌃⌥ .` / `⌃⌥ ,` | §6 |
 | Window mode | `⌃⌥ w` | §7.1: select windows, `r`/`R` rotate, `hjkl` swap, `m` swap with main |
+| Focus neighbour | `⌃⌘ h/j/k/l` | §7.2 |
+| Focus by label | `⌃⌥ f` | §7.2 |
 
 Grid limits: columns and rows are clamped to `1...24`.
 
@@ -153,7 +155,6 @@ when the mode was entered. `Esc` or a mouse click cancels.
   edge and shares part of it (nearest first). The window enters at the near
   edge of the new grid keeping its size in cells (clamped), with the other
   axis mapped proportionally. No adjacent display → the window only snaps.
-- Directional focus (`⌥ hjkl` etc.) is **out of scope for v1**.
 
 ## 7. Auto-arrange
 
@@ -208,6 +209,20 @@ Windows trade frames; nothing is resized to new sizes, so the layout stays.
 - `swapLeft`…, `rotateClockwise`, `rotateCounterclockwise`, `swapWithMain`
   are also actions, unbound by default. Swapping across displays is out of
   scope.
+
+### 7.2 Focus
+
+- **Directional** (`⌃⌘ hjkl`): focus the neighbour in that direction on the
+  same display (same rule as swap). At the display's edge, focus the adjacent
+  display's window nearest the entering edge, then nearest the focused
+  window's center along it. Nothing there → beep-free no-op.
+- **Hints** (`⌃⌥ f`): a label on every window of the current Space on every
+  display (display by display in physical order, reading order within).
+  Typing a label focuses that window; `Esc`, a click or an unknown label
+  cancels. Labels of stacked windows are nudged apart.
+- Focusing makes the window its app's main window, raises it
+  (`AXRaise`) and brings the app to the front (`AXFrontmost`, falling back to
+  `NSRunningApplication.activate`). Windows are never moved.
 
 ## 8. Configuration
 

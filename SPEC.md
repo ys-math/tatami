@@ -53,6 +53,7 @@ disables a binding.
 | Previous layout | `⌃⌥⇧ a` | |
 | Arrange all displays | `⌃⌥⌘ a` | |
 | Send to next / previous display | `⌃⌥ .` / `⌃⌥ ,` | §6 |
+| Window command prefix | `⌃⌥ w`, then a key | §7.1: `hjkl` swap, `r`/`R` rotate, `m` swap with main |
 
 Grid limits: columns and rows are clamped to `1...24`.
 
@@ -117,10 +118,19 @@ when the mode was entered. `Esc` or a mouse click cancels.
 
 ### 5.2 Boundary mode (`⌃⌥ b`)
 
-- Draws every joined boundary and crosspoint on the focused window's display
-  with hint labels (same alphabet as grid mode). The boundary of the focused
-  window nearest its center is selected initially. If no windows meet, the
-  mode does not open (beep).
+- Draws every **minimal** joined boundary and every crosspoint on the focused
+  window's display with hint labels (same alphabet as grid mode). A minimal
+  boundary is the smallest group of windows that can move without moving
+  part of a window's edge: a window joins only if its edge faces a window
+  already on the other side. In a 2×2 the middle lines split into four
+  segments; in `A | (B / C)` the vertical line stays whole because A's edge
+  faces both B and C. (Keyboard joined resize, §4, still moves full lines.)
+- A crosspoint is a point where vertical and horizontal segments meet;
+  moving it moves every segment touching it along that axis.
+- Boundary labels sit mid-way along a boundary's longest stretch between
+  crosspoints, never on a crosspoint.
+- The boundary of the focused window nearest its center is selected
+  initially. If no windows meet, the mode does not open (beep).
 - Typing a label selects it; `Tab`/`⇧Tab` cycles.
 - `hjkl` moves the selection to the next grid line (a vertical boundary
   ignores `j/k`, a horizontal one ignores `h/l`; a crosspoint accepts all
@@ -170,6 +180,25 @@ when the mode was entered. `Esc` or a mouse click cancels.
   list (`CGWindowListCopyWindowInfo`, matched to AX windows by process and
   frame; no Screen Recording permission needed). Each window is placed on its
   own: an app refusing its slot does not undo the others.
+
+### 7.1 Swap and rotate (`⌃⌥ w` prefix)
+
+Windows trade frames; nothing is resized to new sizes, so the layout stays.
+`⌃⌥ w` shows a hint and waits (2 s) for one key, like vim's `<C-w>`:
+
+- `h`/`j`/`k`/`l`: swap the focused window with its neighbour in that
+  direction — a window whose center lies beyond that edge and which shares
+  part of it (nearest, then longest shared stretch). None → beep.
+- `r` / `R`: rotate every eligible window one slot clockwise /
+  counter-clockwise around the centroid of the windows.
+- `m`: swap with the main window (the largest; if the focused window is the
+  largest, the next largest).
+- `Esc`, an unknown key, a click or the timeout cancels.
+- Eligible windows are the auto-arrange set on the focused window's display.
+  A refused size reverts every window (same read-back as joined resize).
+- Each command is also an action (`swapLeft`…, `rotateClockwise`,
+  `rotateCounterclockwise`, `swapWithMain`), unbound by default. Swapping
+  across displays is out of scope.
 
 ## 8. Configuration
 

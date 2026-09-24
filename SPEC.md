@@ -278,5 +278,5 @@ Windows trade frames; nothing is resized to new sizes, so the layout stays.
 
 ## 12. Out of scope for v1
 
-Continuous tiling, directional focus, Spaces management, mouse-driven
+Continuous tiling, Spaces management, mouse-driven
 resizing, settings GUI, notarized releases.

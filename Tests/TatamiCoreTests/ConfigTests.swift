@@ -85,6 +85,12 @@ struct ConfigTests {
         #expect(config.bindings[.moveLeft] == (try Hotkey(parsing: "ctrl+alt+h")))
     }
 
+    @Test func arrangeSettings() throws {
+        let config = try decode(#"{"ignoredApps": ["com.apple.finder"], "cycleTimeout": 5}"#)
+        #expect(config.ignoredApps == ["com.apple.finder"])
+        #expect(config.cycleTimeout == 5)
+    }
+
     @Test func reportsErrors() {
         #expect(throws: ConfigError.unknownAction("teleport")) {
             try decode(#"{"bindings": {"teleport": "ctrl+t"}}"#)
@@ -100,6 +106,9 @@ struct ConfigTests {
         }
         #expect(throws: ConfigError.invalidValue("fineStep must be positive")) {
             try decode(#"{"fineStep": 0}"#)
+        }
+        #expect(throws: ConfigError.invalidValue("cycleTimeout must not be negative")) {
+            try decode(#"{"cycleTimeout": -1}"#)
         }
         #expect(throws: ConfigError.self) { try decode("{ not json") }
         #expect(throws: ConfigError.self) { try decode(#"{"outerGap": "big"}"#) }

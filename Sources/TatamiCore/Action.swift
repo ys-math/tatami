@@ -8,6 +8,7 @@ public enum Action: String, Sendable, CaseIterable, Codable {
     case resizeLeft, resizeDown, resizeUp, resizeRight
     case resizeAloneLeft, resizeAloneDown, resizeAloneUp, resizeAloneRight
     case gridMode, boundaryMode
+    case arrange, arrangePrevious, arrangeAllDisplays
     case growLeft, growDown, growUp, growRight
     case shrinkLeft, shrinkDown, shrinkUp, shrinkRight
 
@@ -33,6 +34,9 @@ public enum Action: String, Sendable, CaseIterable, Codable {
         .resizeRight: "ctrl+alt+shift+l",
         .gridMode: "ctrl+alt+g",
         .boundaryMode: "ctrl+alt+b",
+        .arrange: "ctrl+alt+a",
+        .arrangePrevious: "ctrl+alt+shift+a",
+        .arrangeAllDisplays: "ctrl+alt+cmd+a",
         .resizeAloneLeft: "ctrl+alt+cmd+h",
         .resizeAloneDown: "ctrl+alt+cmd+j",
         .resizeAloneUp: "ctrl+alt+cmd+k",

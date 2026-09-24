@@ -40,6 +40,9 @@ the build script uses it automatically.
 | `⌃⌥⇧ -` / `⌃⌥⇧ =` | Fewer / more grid rows on this display |
 | `⌃⌥ g` | Grid mode (see below) |
 | `⌃⌥ b` | Boundary mode (see below) |
+| `⌃⌥ a` | Auto-arrange this display; press again within 3 s for the next layout |
+| `⌃⌥⇧ a` | Previous layout |
+| `⌃⌥⌘ a` | Auto-arrange every display (each with its last layout) |
 
 Joined resize follows tmux: the key is the direction the boundary moves. It
 uses the window's right (bottom) boundary when that lies inside the display,
@@ -59,6 +62,15 @@ every cell (`q w e r` / `a s d f` on the default 4×2 grid).
 - `hjkl` moves the highlighted selection, `HJKL` resizes it, `Return` applies.
 - `-` / `=` change columns, `_` / `+` change rows, `Tab` jumps to the next
   display, `Esc` cancels.
+
+### Auto-arrange
+
+`⌃⌥ a` lays out the resizable windows on the focused window's display. The
+focused window gets the main slot, the rest follow front-to-back order. Press
+again within `cycleTimeout` seconds to cycle: **Balanced grid → Master + stack
+→ Columns → Rows → Master + grid** (plus **Centered master** on displays wider
+than 21:9); the layout's name flashes on screen. Windows never move to another
+display. Apps listed in `ignoredApps` (bundle IDs) are left alone.
 
 ### Boundary mode
 
@@ -90,6 +102,8 @@ optional; a binding set to `null` is disabled.
   "innerGap": 8,
   "minimumWindowSize": { "width": 100, "height": 60 },
   "fineStep": 10,
+  "ignoredApps": ["com.apple.finder"],
+  "cycleTimeout": 3,
   "bindings": {
     "maximize": "ctrl+alt+return",
     "center": null

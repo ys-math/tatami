@@ -159,9 +159,16 @@ when the mode was entered. `Esc` or a mouse click cancels.
   5. **Master + grid** — master left, balanced grid right.
   6. **Centered master** — only offered on displays wider than 21:9; master
      centered, stacks on both sides.
-- **Cycling:** pressing `⌃⌥ a` again within 3 seconds on the same display with
-  the same window set advances to the next layout; `⌃⌥⇧ a` goes back. The last
-  layout used per display is remembered for the session.
+- **Cycling:** pressing `⌃⌥ a` again within `cycleTimeout` (3 s) on the same
+  display with the same window set advances to the next layout; `⌃⌥⇧ a` goes
+  back. The last layout used per display is remembered for the session; a
+  later `⌃⌥ a` reuses it. The layout's name flashes on the display.
+- **Arrange all displays** (`⌃⌥⌘ a`) uses each display's remembered layout
+  and does not cycle.
+- The current Space and front-to-back order come from the on-screen window
+  list (`CGWindowListCopyWindowInfo`, matched to AX windows by process and
+  frame; no Screen Recording permission needed). Each window is placed on its
+  own: an app refusing its slot does not undo the others.
 
 ## 8. Configuration
 

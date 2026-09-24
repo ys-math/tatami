@@ -59,7 +59,14 @@ final class CommandExecutor<System: WindowSystem> {
         case .resizeDown: return joinedResize(window, current, .down, display: display, grid: grid)
         case .resizeUp: return joinedResize(window, current, .up, display: display, grid: grid)
         case .resizeRight: return joinedResize(window, current, .right, display: display, grid: grid)
-        case .gridMode, .boundaryMode: return false  // Modal; handled by their controllers.
+        case .gridMode, .boundaryMode, .windowCommand: return false  // Modal; handled by their controllers.
+        case .swapLeft: return swap(window, .left, display: display)
+        case .swapDown: return swap(window, .down, display: display)
+        case .swapUp: return swap(window, .up, display: display)
+        case .swapRight: return swap(window, .right, display: display)
+        case .rotateClockwise: return rotate(display, focused: window, clockwise: true)
+        case .rotateCounterclockwise: return rotate(display, focused: window, clockwise: false)
+        case .swapWithMain: return swapWithMain(window, display: display)
         case .arrange: return arrange(display, focused: window, step: 1)
         case .arrangePrevious: return arrange(display, focused: window, step: -1)
         case .arrangeAllDisplays: return arrangeAllDisplays(focused: window)
@@ -120,6 +127,41 @@ final class CommandExecutor<System: WindowSystem> {
                 current, edge, grow: grow, grid: grid, minimumSize: config.minimumWindowSize.cgSize)
         else { return false }
         return apply([window: target], originals: [window: current])
+    }
+
+    // MARK: - Swap and rotate
+
+    /// Frames of the windows that may trade places on `display` (the auto-arrange set).
+    private func swappableFrames(on display: Display, focused: System.Window) -> [System.Window: CGRect] {
+        var frames: [System.Window: CGRect] = [:]
+        for window in arrangeableWindows(on: display, focused: focused) {
+            frames[window] = system.frame(of: window)
+        }
+        return frames
+    }
+
+    private func swap(_ window: System.Window, _ direction: Direction, display: Display) -> Bool {
+        let frames = swappableFrames(on: display, focused: window)
+        guard let other = Swaps.neighbor(of: window, direction, frames: frames),
+            let targets = Swaps.swap(window, other, frames: frames)
+        else { return false }
+        return apply(targets, originals: frames)
+    }
+
+    private func rotate(_ display: Display, focused: System.Window, clockwise: Bool) -> Bool {
+        let frames = swappableFrames(on: display, focused: focused)
+        guard let targets = Swaps.rotate(frames, clockwise: clockwise) else { return false }
+        return apply(targets, originals: frames)
+    }
+
+    private func swapWithMain(_ window: System.Window, display: Display) -> Bool {
+        let frames = swappableFrames(on: display, focused: window)
+        // Plain front-to-back order (not focused-first), so size ties go to the frontmost window.
+        let frontToBack = system.windows().filter { frames[$0] != nil }
+        guard let partner = Swaps.mainPartner(of: window, frames: frames, order: frontToBack),
+            let targets = Swaps.swap(window, partner, frames: frames)
+        else { return false }
+        return apply(targets, originals: frames)
     }
 
     // MARK: - Displays

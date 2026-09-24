@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let gridFlash = GridFlash()
     private lazy var gridMode = GridModeController(executor: executor)
     private lazy var boundaryMode = BoundaryModeController(executor: executor)
+    private lazy var windowCommand = WindowCommandController(executor: executor)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setUpStatusItem()
@@ -99,11 +100,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let wasInBoundaryMode = boundaryMode.isActive
         gridMode.end()
         boundaryMode.end()
+        windowCommand.end()
         switch action {
         case .gridMode:
             if !wasInGridMode { gridMode.begin() }
         case .boundaryMode:
             if !wasInBoundaryMode { boundaryMode.begin() }
+        case .windowCommand:
+            windowCommand.begin()
         default:
             executor.execute(action)
         }

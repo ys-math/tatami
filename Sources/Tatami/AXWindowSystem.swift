@@ -12,13 +12,50 @@ struct AXWindowSystem: WindowSystem {
     }
 
     func windows() -> [AXUIElement] {
-        NSWorkspace.shared.runningApplications
-            .filter { $0.activationPolicy == .regular && !$0.isHidden }
-            .flatMap { app -> [AXUIElement] in
-                let appElement = AXUIElementCreateApplication(app.processIdentifier)
-                let windows: [AXUIElement] = attribute(kAXWindowsAttribute, of: appElement) ?? []
-                return windows.filter(isStandardVisibleWindow)
+        // The on-screen window list is front-to-back and only covers the
+        // current Space; AX windows are matched to it by process and frame.
+        let onScreen = onScreenWindows()
+        var ordered: [(index: Int, window: AXUIElement)] = []
+        for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular && !app.isHidden {
+            let appElement = AXUIElementCreateApplication(app.processIdentifier)
+            let windows: [AXUIElement] = attribute(kAXWindowsAttribute, of: appElement) ?? []
+            for window in windows where isStandardVisibleWindow(window) {
+                guard let frame = frame(of: window),
+                    let index = onScreen.firstIndex(where: {
+                        $0.pid == app.processIdentifier && $0.bounds.isClose(to: frame, tolerance: 1)
+                    })
+                else { continue }
+                ordered.append((index, window))
             }
+        }
+        return ordered.sorted { $0.index < $1.index }.map(\.window)
+    }
+
+    func isResizable(_ window: AXUIElement) -> Bool {
+        var settable = DarwinBoolean(false)
+        return AXUIElementIsAttributeSettable(window, kAXSizeAttribute as CFString, &settable) == .success
+            && settable.boolValue
+    }
+
+    func appIdentifier(of window: AXUIElement) -> String? {
+        var pid: pid_t = 0
+        guard AXUIElementGetPid(window, &pid) == .success else { return nil }
+        return NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
+    }
+
+    /// Normal-layer on-screen windows, frontmost first. Bounds and owner
+    /// PIDs need no Screen Recording permission.
+    private func onScreenWindows() -> [(pid: pid_t, bounds: CGRect)] {
+        let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
+        guard let list = CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]] else { return [] }
+        return list.compactMap { info in
+            guard info[kCGWindowLayer as String] as? Int == 0,
+                let pid = info[kCGWindowOwnerPID as String] as? pid_t,
+                let boundsInfo = info[kCGWindowBounds as String] as? NSDictionary,
+                let bounds = CGRect(dictionaryRepresentation: boundsInfo)
+            else { return nil }
+            return (pid, bounds)
+        }
     }
 
     private func isStandardVisibleWindow(_ window: AXUIElement) -> Bool {

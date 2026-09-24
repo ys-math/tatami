@@ -12,6 +12,10 @@ final class FakeWindowSystem: WindowSystem {
     var screens: [Display]
     /// Simulates apps that refuse to become narrower than this.
     var minimumWidths: [Int: CGFloat] = [:]
+    /// Front-to-back order; defaults to ascending IDs.
+    var order: [Int]?
+    var fixedSize: Set<Int> = []
+    var apps: [Int: String] = [:]
 
     init(frames: [Int: CGRect], focused: Int?, screens: [Display]) {
         self.frames = frames
@@ -20,7 +24,9 @@ final class FakeWindowSystem: WindowSystem {
     }
 
     func focusedWindow() -> Int? { focused }
-    func windows() -> [Int] { frames.keys.sorted() }
+    func windows() -> [Int] { order ?? frames.keys.sorted() }
+    func isResizable(_ window: Int) -> Bool { !fixedSize.contains(window) }
+    func appIdentifier(of window: Int) -> String? { apps[window] }
     func frame(of window: Int) -> CGRect? { frames[window] }
     func setFrame(_ frame: CGRect, of window: Int) -> Bool {
         var frame = frame
@@ -187,6 +193,85 @@ struct ResizeExecutorTests {
         #expect(!executor.execute(.resizeRight))
         #expect(!executor.execute(.shrinkRight))
         #expect(system.frames[1] == span(0, 2))
+    }
+}
+
+@MainActor
+struct ArrangeExecutorTests {
+    let main = Display(
+        id: "main", frame: CGRect(x: 0, y: 0, width: 1016, height: 540),
+        visibleFrame: CGRect(x: 0, y: 24, width: 1016, height: 516))
+    let external = Display(
+        id: "ext", frame: CGRect(x: 1016, y: 0, width: 2560, height: 1440),
+        visibleFrame: CGRect(x: 1016, y: 0, width: 2560, height: 1440))
+    /// Main display area after the 8pt outer gap.
+    let area = CGRect(x: 8, y: 32, width: 1000, height: 500)
+
+    private func system(_ frames: [Int: CGRect], focused: Int) -> FakeWindowSystem {
+        FakeWindowSystem(frames: frames, focused: focused, screens: [main, external])
+    }
+
+    private let small = CGRect(x: 100, y: 100, width: 300, height: 200)
+
+    @Test func focusedWindowGetsTheMasterSlotThenFrontToBack() {
+        let system = system([1: small, 2: small, 3: small], focused: 3)
+        system.order = [2, 3, 1]
+        let executor = CommandExecutor(system: system)
+        var named: [Layout] = []
+        executor.onArranged = { layout, _ in named.append(layout) }
+
+        #expect(executor.execute(.arrange))
+        let expected = Layout.balancedGrid.frames(count: 3, in: area, gap: 8)
+        #expect(system.frames[3] == expected[0])
+        #expect(system.frames[2] == expected[1])
+        #expect(system.frames[1] == expected[2])
+        #expect(named == [.balancedGrid])
+    }
+
+    @Test func pressingAgainCyclesAndPreviousGoesBack() {
+        let system = system([1: small, 2: small], focused: 1)
+        let executor = CommandExecutor(system: system)
+        var clock = Date(timeIntervalSinceReferenceDate: 0)
+        executor.now = { clock }
+        var named: [Layout] = []
+        executor.onArranged = { layout, _ in named.append(layout) }
+
+        executor.execute(.arrange)
+        clock += 1
+        executor.execute(.arrange)
+        clock += 1
+        executor.execute(.arrangePrevious)
+        clock += 10
+        executor.execute(.arrange)  // Too late to cycle: reuse the remembered layout.
+        #expect(named == [.balancedGrid, .masterStack, .balancedGrid, .balancedGrid])
+        #expect(system.frames[1] == Layout.balancedGrid.frames(count: 2, in: area, gap: 8)[0])
+    }
+
+    @Test func skipsIneligibleWindowsAndOtherDisplays() {
+        let otherDisplay = CGRect(x: 1200, y: 100, width: 500, height: 400)
+        let tiny = CGRect(x: 50, y: 50, width: 80, height: 40)
+        let system = system([1: small, 2: small, 3: small, 4: tiny, 5: otherDisplay], focused: 1)
+        system.fixedSize = [2]
+        system.apps = [3: "com.example.ignored"]
+        let executor = CommandExecutor(system: system)
+        executor.config.ignoredApps = ["com.example.ignored"]
+
+        #expect(executor.execute(.arrange))
+        #expect(system.frames[1] == area)  // The only eligible window fills the display.
+        #expect(system.frames[2] == small && system.frames[3] == small)
+        #expect(system.frames[4] == tiny && system.frames[5] == otherDisplay)
+    }
+
+    @Test func arrangeAllDisplaysKeepsWindowsOnTheirDisplay() {
+        let onExternal = CGRect(x: 1200, y: 100, width: 500, height: 400)
+        let system = system([1: small, 2: onExternal, 3: onExternal.offsetBy(dx: 600, dy: 0)], focused: 1)
+        let executor = CommandExecutor(system: system)
+
+        #expect(executor.execute(.arrangeAllDisplays))
+        #expect(system.frames[1] == area)
+        let externalArea = external.visibleFrame.insetBy(dx: 8, dy: 8)
+        let expected = Layout.balancedGrid.frames(count: 2, in: externalArea, gap: 8)
+        #expect(Set([system.frames[2]!, system.frames[3]!]) == Set(expected))
     }
 }
 

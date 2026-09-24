@@ -21,7 +21,8 @@ public enum GridLabels {
 
     /// `count` distinct labels: single characters when they suffice,
     /// otherwise two-character labels of equal length.
-    public static func sequence(count: Int) -> [String] {
+    public static func sequence(count: Int, excluding reserved: Set<Character> = []) -> [String] {
+        let alphabet = alphabet.filter { !reserved.contains(Character($0)) }
         if count <= alphabet.count {
             return Array(alphabet.prefix(count))
         }

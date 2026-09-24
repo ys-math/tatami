@@ -27,19 +27,19 @@ final class BoundaryModeView: NSView {
         var origin: CGPoint
 
         init<ID: Hashable>(
-            items: [BoundaryItem<ID>], labels: [String], selectedIndex: Int, typed: String, windows: [CGRect],
-            innerGap: CGFloat, origin: CGPoint
+            items: [BoundaryItem<ID>], anchors: [CGPoint], labels: [String], selectedIndex: Int, typed: String,
+            windows: [CGRect], innerGap: CGFloat, origin: CGPoint
         ) {
             func line(_ boundary: Boundary<ID>) -> Line {
                 Line(axis: boundary.axis, position: boundary.position, extent: boundary.extent)
             }
-            self.items = items.map { item in
+            self.items = zip(items, anchors).map { item, anchor in
                 switch item {
                 case .boundary(let boundary):
-                    Item(lines: [line(boundary)], anchor: item.anchor, isCrosspoint: false)
+                    Item(lines: [line(boundary)], anchor: anchor, isCrosspoint: false)
                 case .crosspoint(let crosspoint):
                     Item(
-                        lines: [line(crosspoint.vertical), line(crosspoint.horizontal)], anchor: item.anchor,
+                        lines: (crosspoint.verticals + crosspoint.horizontals).map(line), anchor: anchor,
                         isCrosspoint: true)
                 }
             }

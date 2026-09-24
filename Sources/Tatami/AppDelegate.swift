@@ -12,6 +12,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let gridFlash = GridFlash()
     private lazy var gridMode = GridModeController(executor: executor)
     private lazy var boundaryMode = BoundaryModeController(executor: executor)
+    private lazy var windowMode = WindowModeController(executor: executor)
+    private lazy var focusHints = FocusHintController(executor: executor)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setUpStatusItem()
@@ -97,13 +99,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Any hotkey leaves an open mode first; a mode's own hotkey toggles it.
         let wasInGridMode = gridMode.isActive
         let wasInBoundaryMode = boundaryMode.isActive
+        let wasInWindowMode = windowMode.isActive
+        let wasInFocusHints = focusHints.isActive
         gridMode.end()
         boundaryMode.end()
+        windowMode.end()
+        focusHints.end()
         switch action {
         case .gridMode:
             if !wasInGridMode { gridMode.begin() }
         case .boundaryMode:
             if !wasInBoundaryMode { boundaryMode.begin() }
+        case .windowCommand:
+            if !wasInWindowMode { windowMode.begin() }
+        case .focusHints:
+            if !wasInFocusHints { focusHints.begin() }
         default:
             executor.execute(action)
         }

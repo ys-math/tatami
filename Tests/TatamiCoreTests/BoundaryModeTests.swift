@@ -13,6 +13,10 @@ private func cells(_ column: Int, _ row: Int, _ columns: Int, _ rows: Int) -> CG
 
 /// A | (B / C)
 private let tJunction = ["A": cells(0, 0, 2, 4), "B": cells(2, 0, 2, 2), "C": cells(2, 2, 2, 2)]
+/// A | B, no crosspoints.
+private let halves = ["A": cells(0, 0, 2, 4), "B": cells(2, 0, 2, 4)]
+/// A | B | C with lines at x = 355 and 875.
+private let threeColumns = ["A": cells(0, 0, 1, 4), "B": cells(1, 0, 2, 4), "C": cells(3, 0, 1, 4)]
 /// Four quarters.
 private let quarters = [
     "TL": cells(0, 0, 2, 2), "TR": cells(2, 0, 2, 2), "BL": cells(0, 2, 2, 2), "BR": cells(2, 2, 2, 2),
@@ -41,11 +45,45 @@ struct BoundaryEnumerationTests {
         #expect(found.crosspoints.map(\.point) == [CGPoint(x: 615, y: 305)])
     }
 
-    @Test func quartersShareFullLengthLines() {
+    @Test func quartersSplitIntoMinimalSegmentsMeetingAtOneDot() throws {
         let found = Boundaries.all(frames: quarters, grid: grid)
-        #expect(found.boundaries.count == 2)
-        #expect(found.boundaries.allSatisfy { $0.members.count == 4 })
+        #expect(found.boundaries.count == 4)
+        #expect(found.boundaries.allSatisfy { $0.members.count == 2 })
+        let dot = try #require(found.crosspoints.first)
         #expect(found.crosspoints.count == 1)
+        #expect(dot.point == CGPoint(x: 615, y: 305))
+        #expect(dot.verticals.count == 2 && dot.horizontals.count == 2)
+        // The dot still moves whole lines.
+        #expect(dot.vertical.members == ["TL", "TR", "BL", "BR"])
+    }
+
+    @Test func tJunctionVerticalCannotBeSplit() throws {
+        // A's whole right edge faces both B and C, so they stay one boundary.
+        let vertical = try #require(
+            Boundaries.all(frames: tJunction, grid: grid).boundaries.first { $0.axis == .horizontal })
+        #expect(vertical.after == ["B", "C"])
+    }
+
+    @Test func staggeredLayoutKeepsTheConnectedLineWhole() {
+        // Quarters after moving only the top segment right to x = 875.
+        var staggered = quarters
+        staggered["TL"] = cells(0, 0, 3, 2)
+        staggered["TR"] = cells(3, 0, 1, 2)
+        let found = Boundaries.all(frames: staggered, grid: grid)
+        let verticals = found.boundaries.filter { $0.axis == .horizontal }
+        #expect(Set(verticals.map(\.position)) == [615, 875])
+        // TL faces BL and BR across the horizontal line, TR faces BR: one boundary.
+        let horizontals = found.boundaries.filter { $0.axis == .vertical }
+        #expect(horizontals.count == 1)
+        #expect(horizontals.first?.members.count == 4)
+    }
+
+    @Test func labelsStayOffCrosspoints() throws {
+        let found = Boundaries.all(frames: tJunction, grid: grid)
+        let vertical = try #require(found.boundaries.first { $0.axis == .horizontal })
+        let label = Boundaries.labelPoint(for: vertical, junctions: found.crosspoints.map(\.point))
+        // The line runs y 50–560 with the T at 305: the label sits mid-way along one half.
+        #expect(label == CGPoint(x: 615, y: 177.5))
     }
 
     @Test func separateWindowsHaveNoBoundaries() {
@@ -55,51 +93,65 @@ struct BoundaryEnumerationTests {
 }
 
 struct BoundaryModeStateTests {
+    private func boundary(_ item: BoundaryItem<String>) -> Boundary<String>? {
+        if case .boundary(let boundary) = item { boundary } else { nil }
+    }
+
     @Test func noJoinedWindowsMeansNoMode() {
         #expect(makeState(["A": cells(0, 0, 1, 1)]) == nil)
     }
 
-    @Test func startsOnTheFocusedWindowsNearestBoundary() throws {
-        let fromC = try #require(makeState(tJunction, focused: "C"))
-        // C touches both lines; the horizontal line (y = 305, moving along the vertical axis) is nearer its center.
-        guard case .boundary(let boundary) = fromC.selected else {
-            Issue.record("expected a boundary")
+    @Test func tShapeOffersOnlyTheCrosspoint() throws {
+        // The dot moves the vertical line with h/l and the horizontal one with j/k, so the lines are redundant.
+        var state = try #require(makeState(tJunction, focused: "A"))
+        #expect(state.items.count == 1)
+        #expect(state.selected.isCrosspoint)
+        guard case .apply(let horizontal) = state.handle(.move(.right)) else {
+            Issue.record("expected apply")
             return
         }
-        #expect(boundary.axis == .vertical)
+        #expect(Set(horizontal.keys) == ["A", "B", "C"])
+        guard case .apply(let vertical) = state.handle(.move(.down)) else {
+            Issue.record("expected apply")
+            return
+        }
+        #expect(Set(vertical.keys) == ["B", "C"])
+    }
 
-        let fromA = try #require(makeState(tJunction, focused: "A"))
-        guard case .boundary(let aBoundary) = fromA.selected else {
-            Issue.record("expected a boundary")
-            return
-        }
-        #expect(aBoundary.axis == .horizontal)
+    @Test func quarterSegmentsStaySelectableBesideTheDot() throws {
+        // The dot moves both halves of each line, so each half is still worth selecting.
+        let state = try #require(makeState(quarters))
+        #expect(state.items.count == 5)
+        #expect(state.items.filter(\.isCrosspoint).count == 1)
+    }
+
+    @Test func startsOnTheFocusedWindowsNearestBoundary() throws {
+        let fromA = try #require(makeState(threeColumns, focused: "A"))
+        #expect(boundary(fromA.selected)?.position == 355)
+        let fromC = try #require(makeState(threeColumns, focused: "C"))
+        #expect(boundary(fromC.selected)?.position == 875)
     }
 
     @Test func hjklMovesTheSelectedLineToTheNextGridLine() throws {
-        var state = try #require(makeState(tJunction, focused: "A"))
+        var state = try #require(makeState(halves, focused: "A"))
         guard case .apply(let targets) = state.handle(.move(.right)) else {
             Issue.record("expected apply")
             return
         }
         #expect(targets["A"]?.maxX == 870)
-        #expect(targets["B"]?.minX == 880 && targets["C"]?.minX == 880)
+        #expect(targets["B"]?.minX == 880)
         // The selection follows the moved line.
-        guard case .boundary(let boundary) = state.selected else {
-            Issue.record("expected a boundary")
-            return
-        }
-        #expect(boundary.position == 875)
+        #expect(boundary(state.selected)?.position == 875)
     }
 
     @Test func verticalLineIgnoresUpAndDown() throws {
-        var state = try #require(makeState(tJunction, focused: "A"))
+        var state = try #require(makeState(halves, focused: "A"))
         #expect(state.handle(.move(.up)) == .ignored)
         #expect(state.handle(.fineMove(.down)) == .ignored)
     }
 
     @Test func fineStepMovesByPoints() throws {
-        var state = try #require(makeState(tJunction, focused: "A"))
+        var state = try #require(makeState(halves, focused: "A"))
         guard case .apply(let targets) = state.handle(.fineMove(.left)) else {
             Issue.record("expected apply")
             return
@@ -127,18 +179,38 @@ struct BoundaryModeStateTests {
         }
         #expect(verticalMove["TL"]?.maxY == 430 && verticalMove["BL"]?.minY == 440)
         #expect(state.selected.isCrosspoint)
-        #expect(state.selected.anchor == CGPoint(x: 355, y: 435))
+        #expect(state.anchors[state.selectedIndex] == CGPoint(x: 355, y: 435))
+    }
+
+    @Test func aMinimalSegmentMovesOnlyItsOwnWindows() throws {
+        var state = try #require(makeState(quarters, focused: "TL"))
+        let top = try #require(
+            state.items.firstIndex {
+                boundary($0).map { $0.axis == .horizontal && $0.members == ["TL", "TR"] } ?? false
+            })
+        _ = state.handle(.character(Character(state.labels[top])))
+        guard case .apply(let targets) = state.handle(.move(.right)) else {
+            Issue.record("expected apply")
+            return
+        }
+        #expect(Set(targets.keys) == ["TL", "TR"])
+        #expect(targets["TL"]?.maxX == 870 && targets["TR"]?.minX == 880)
+    }
+
+    @Test func anchorsNeverOverlap() throws {
+        let state = try #require(makeState(quarters, focused: "TL"))
+        #expect(Set(state.anchors.map { "\($0.x),\($0.y)" }).count == state.anchors.count)
     }
 
     @Test func tabCyclesAndLabelsSelect() throws {
-        var state = try #require(makeState(tJunction, focused: "A"))
-        #expect(state.items.count == 3)
+        var state = try #require(makeState(quarters, focused: "TL"))
+        let count = state.items.count
         let start = state.selectedIndex
         _ = state.handle(.next)
-        #expect(state.selectedIndex == (start + 1) % 3)
+        #expect(state.selectedIndex == (start + 1) % count)
         _ = state.handle(.previous)
         _ = state.handle(.previous)
-        #expect(state.selectedIndex == (start + 2) % 3)
+        #expect(state.selectedIndex == (start + count - 1) % count)
         #expect(state.handle(.character(Character(state.labels[1]))) == .updated)
         #expect(state.selectedIndex == 1)
         #expect(state.handle(.character("z")) == .ignored)
@@ -152,19 +224,15 @@ struct BoundaryModeStateTests {
     }
 
     @Test func refreshKeepsTheSelectionAfterAnAppRefused() throws {
-        var state = try #require(makeState(tJunction, focused: "A"))
+        var state = try #require(makeState(halves, focused: "A"))
         _ = state.handle(.move(.right))
-        state.refresh(frames: tJunction)  // The move was reverted.
-        guard case .boundary(let boundary) = state.selected else {
-            Issue.record("expected a boundary")
-            return
-        }
-        #expect(boundary.axis == .horizontal && boundary.position == 615)
-        #expect(state.frames == tJunction)
+        state.refresh(frames: halves)  // The move was reverted.
+        #expect(boundary(state.selected)?.position == 615)
+        #expect(state.frames == halves)
     }
 
     @Test func exit() throws {
-        var state = try #require(makeState(tJunction))
+        var state = try #require(makeState(halves))
         #expect(state.handle(.exit) == .exit)
     }
 }

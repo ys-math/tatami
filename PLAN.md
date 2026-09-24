@@ -76,7 +76,23 @@ behaviour details.
 - Edge crossing for `⌃⌥ hjkl`; grid-mode `Tab` across displays verified.
 - **Test:** with a second display.
 
-## Phase 8 — Polish (`phase-8/polish`)
+## Phase 8 — Segments, swap and rotate (`phase-8/segments-and-swap`)
+
+Added after Phase 7 at the owner's request.
+
+- Boundary mode selects minimal boundaries (segments) and merged crosspoints;
+  labels never sit on crosspoints.
+- Boundaries that a crosspoint already moves exactly are not offered (a T
+  shape shows only its dot).
+- `⌃⌥ w` window mode (open until Esc): labels select windows; `r`/`R` rotate
+  the selection (or all), `hjkl` swap with neighbour, `m` swap with main.
+  Unbound actions for each.
+- Focus: `⌃⌘ hjkl` directional (crossing displays), `⌃⌥ f` hint labels on
+  every window of every display.
+- **Test:** 2×2 segments move independently; T-shape labels are separate;
+  swap/rotate/main keep the layout.
+
+## Phase 9 — Polish (`phase-9/polish`)
 
 - Launch at login (`SMAppService`), config file watching, menu error display,
   README usage docs, make `swift format lint` blocking.

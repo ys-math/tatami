@@ -43,6 +43,19 @@ public enum GridCommands {
         return span.setting(axis, start: newLow, length: newHigh - newLow)
     }
 
+    /// Where a span lands after crossing a display edge in `direction`: at
+    /// the entering edge of the new grid, keeping its size in cells (clamped),
+    /// with the other axis mapped proportionally.
+    public static func cross(
+        _ span: CellSpan, _ direction: Direction, from old: GridSize, to new: GridSize
+    ) -> CellSpan {
+        let axis = Axis(direction)
+        let count = new.count(axis)
+        let length = min(span.length(axis), count)
+        let mapped = map(span, from: old, to: new)
+        return mapped.setting(axis, start: direction.isForward ? 0 : count - length, length: length)
+    }
+
     /// Maps a span proportionally onto a grid of another size (the left half
     /// stays the left half). Never returns an empty span.
     public static func map(_ span: CellSpan, from old: GridSize, to new: GridSize) -> CellSpan {

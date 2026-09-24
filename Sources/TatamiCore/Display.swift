@@ -22,6 +22,28 @@ extension Display {
         displays.sorted { ($0.frame.minX, $0.frame.minY) < ($1.frame.minX, $1.frame.minY) }
     }
 
+    /// The display physically next to `display` in `direction`, or `nil`.
+    ///
+    /// Candidates lie beyond that edge and share part of it (macOS arranges
+    /// displays edge to edge; a display only diagonally beyond is not
+    /// adjacent). The nearest edge wins, then the longest shared stretch.
+    public static func adjacent(to display: Display, _ direction: Direction, in displays: [Display]) -> Display? {
+        let axis = Axis(direction)
+        let along = axis.perpendicular
+        let frame = display.frame
+        let tolerance: CGFloat = 1
+        func overlap(_ other: Display) -> CGFloat {
+            min(along.hi(frame), along.hi(other.frame)) - max(along.lo(frame), along.lo(other.frame))
+        }
+        func gap(_ other: Display) -> CGFloat {
+            direction.isForward ? axis.lo(other.frame) - axis.hi(frame) : axis.lo(frame) - axis.hi(other.frame)
+        }
+        let candidates = displays.filter { other in
+            other.id != display.id && gap(other) >= -tolerance && overlap(other) > 0
+        }
+        return candidates.min { (gap($0), -overlap($0)) < (gap($1), -overlap($1)) }
+    }
+
     /// The display that shows the largest part of `rect`.
     /// Falls back to the display nearest to the rect's center when it is off-screen.
     public static func containing(_ rect: CGRect, in displays: [Display]) -> Display? {

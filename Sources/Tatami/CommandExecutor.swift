@@ -40,10 +40,12 @@ final class CommandExecutor<System: WindowSystem> {
 
         let target: CGRect?
         switch action {
-        case .moveLeft: target = GridCommands.move(span, .left, in: grid).map(grid.rect(for:))
-        case .moveDown: target = GridCommands.move(span, .down, in: grid).map(grid.rect(for:))
-        case .moveUp: target = GridCommands.move(span, .up, in: grid).map(grid.rect(for:))
-        case .moveRight: target = GridCommands.move(span, .right, in: grid).map(grid.rect(for:))
+        case .moveLeft: target = move(span, .left, grid: grid, display: display)
+        case .moveDown: target = move(span, .down, grid: grid, display: display)
+        case .moveUp: target = move(span, .up, grid: grid, display: display)
+        case .moveRight: target = move(span, .right, grid: grid, display: display)
+        case .sendToNextDisplay: target = send(span, grid: grid, display: display, step: 1)
+        case .sendToPreviousDisplay: target = send(span, grid: grid, display: display, step: -1)
         case .leftHalf: target = Presets.leftHalf(on: display, gaps: gaps)
         case .rightHalf: target = Presets.rightHalf(on: display, gaps: gaps)
         case .maximize: target = Presets.maximize(on: display, gaps: gaps)
@@ -118,6 +120,27 @@ final class CommandExecutor<System: WindowSystem> {
                 current, edge, grow: grow, grid: grid, minimumSize: config.minimumWindowSize.cgSize)
         else { return false }
         return apply([window: target], originals: [window: current])
+    }
+
+    // MARK: - Displays
+
+    /// One cell in `direction`; past the display's edge, onto the adjacent display.
+    private func move(_ span: CellSpan, _ direction: Direction, grid: Grid, display: Display) -> CGRect? {
+        if let moved = GridCommands.move(span, direction, in: grid) {
+            return grid.rect(for: moved)
+        }
+        guard let next = Display.adjacent(to: display, direction, in: system.displays()) else { return nil }
+        let nextGrid = self.grid(for: next)
+        return nextGrid.rect(for: GridCommands.cross(span, direction, from: grid.size, to: nextGrid.size))
+    }
+
+    /// The same relative cells on the next or previous display in physical order (wrapping).
+    private func send(_ span: CellSpan, grid: Grid, display: Display, step: Int) -> CGRect? {
+        let displays = Display.sortedPhysically(system.displays())
+        guard displays.count > 1, let index = displays.firstIndex(where: { $0.id == display.id }) else { return nil }
+        let next = displays[(index + step + displays.count) % displays.count]
+        let nextGrid = self.grid(for: next)
+        return nextGrid.rect(for: GridCommands.map(span, from: grid.size, to: nextGrid.size))
     }
 
     // MARK: - Auto-arrange

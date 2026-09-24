@@ -71,12 +71,12 @@ struct SpanCommandsTests {
 }
 
 struct GridModeStateTests {
-    private func state(sizes: [GridSize] = [.default], selection: CellSpan = span(0, 0, 1, 1)) -> GridModeState {
+    private func makeState(sizes: [GridSize] = [.default], selection: CellSpan = span(0, 0, 1, 1)) -> GridModeState {
         GridModeState(displayIndex: 0, gridSizes: sizes, selection: selection)
     }
 
     @Test func twoLabelsApplyTheSpanBetweenThem() {
-        var state = state()
+        var state = makeState()
         #expect(state.handle(.character("w")) == .updated)
         #expect(state.corner == span(1, 0, 1, 1))
         #expect(state.selection == span(1, 0, 1, 1))
@@ -84,19 +84,19 @@ struct GridModeStateTests {
     }
 
     @Test func returnAfterOneLabelAppliesThatCell() {
-        var state = state()
+        var state = makeState()
         _ = state.handle(.character("d"))
         #expect(state.handle(.apply) == .apply(displayIndex: 0, span(2, 1, 1, 1)))
     }
 
     @Test func unknownLabelIsIgnored() {
-        var state = state()
+        var state = makeState()
         #expect(state.handle(.character("z")) == .ignored)
         #expect(state.corner == nil)
     }
 
     @Test func twoCharacterLabelsNeedBothKeys() {
-        var state = state(sizes: [GridSize(columns: 24, rows: 24)])
+        var state = makeState(sizes: [GridSize(columns: 24, rows: 24)])
         #expect(state.handle(.character("a")) == .updated)
         #expect(state.typed == "a")
         #expect(state.corner == nil)
@@ -106,7 +106,7 @@ struct GridModeStateTests {
     }
 
     @Test func cursorMovesAndResizes() {
-        var state = state()
+        var state = makeState()
         #expect(state.handle(.move(.right)) == .updated)
         #expect(state.handle(.resize(.right)) == .updated)
         #expect(state.handle(.resize(.down)) == .updated)
@@ -116,7 +116,7 @@ struct GridModeStateTests {
     }
 
     @Test func cursorInputClearsAPendingCorner() {
-        var state = state()
+        var state = makeState()
         _ = state.handle(.character("q"))
         _ = state.handle(.move(.right))
         #expect(state.corner == nil)
@@ -125,7 +125,7 @@ struct GridModeStateTests {
     }
 
     @Test func adjustingTheGridRemapsTheSelection() {
-        var state = state(selection: span(0, 0, 2, 2))
+        var state = makeState(selection: span(0, 0, 2, 2))
         #expect(
             state.handle(.adjustGrid(columns: 2, rows: 0))
                 == .gridChanged(displayIndex: 0, GridSize(columns: 6, rows: 2)))
@@ -137,7 +137,7 @@ struct GridModeStateTests {
     }
 
     @Test func tabMovesToTheNextDisplayProportionally() {
-        var state = state(sizes: [.default, GridSize(columns: 6, rows: 3)], selection: span(2, 0, 2, 2))
+        var state = makeState(sizes: [.default, GridSize(columns: 6, rows: 3)], selection: span(2, 0, 2, 2))
         #expect(state.handle(.nextDisplay) == .updated)
         #expect(state.displayIndex == 1)
         #expect(state.selection == span(3, 0, 3, 3))
@@ -147,12 +147,12 @@ struct GridModeStateTests {
     }
 
     @Test func tabWithOneDisplayIsIgnored() {
-        var state = state()
+        var state = makeState()
         #expect(state.handle(.nextDisplay) == .ignored)
     }
 
     @Test func cancel() {
-        var state = state()
+        var state = makeState()
         #expect(state.handle(.cancel) == .cancel)
     }
 }

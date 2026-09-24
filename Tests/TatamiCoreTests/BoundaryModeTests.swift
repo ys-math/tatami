@@ -18,7 +18,7 @@ private let quarters = [
     "TL": cells(0, 0, 2, 2), "TR": cells(2, 0, 2, 2), "BL": cells(0, 2, 2, 2), "BR": cells(2, 2, 2, 2),
 ]
 
-private func state(_ frames: [String: CGRect], focused: String? = nil) -> BoundaryModeState<String>? {
+private func makeState(_ frames: [String: CGRect], focused: String? = nil) -> BoundaryModeState<String>? {
     BoundaryModeState(
         frames: frames, focused: focused, grid: grid, minimumSize: CGSize(width: 50, height: 50), fineStep: 10)
 }
@@ -56,11 +56,11 @@ struct BoundaryEnumerationTests {
 
 struct BoundaryModeStateTests {
     @Test func noJoinedWindowsMeansNoMode() {
-        #expect(state(["A": cells(0, 0, 1, 1)]) == nil)
+        #expect(makeState(["A": cells(0, 0, 1, 1)]) == nil)
     }
 
     @Test func startsOnTheFocusedWindowsNearestBoundary() throws {
-        let fromC = try #require(state(tJunction, focused: "C"))
+        let fromC = try #require(makeState(tJunction, focused: "C"))
         // C touches both lines; the horizontal line (y = 305, moving along the vertical axis) is nearer its center.
         guard case .boundary(let boundary) = fromC.selected else {
             Issue.record("expected a boundary")
@@ -68,7 +68,7 @@ struct BoundaryModeStateTests {
         }
         #expect(boundary.axis == .vertical)
 
-        let fromA = try #require(state(tJunction, focused: "A"))
+        let fromA = try #require(makeState(tJunction, focused: "A"))
         guard case .boundary(let aBoundary) = fromA.selected else {
             Issue.record("expected a boundary")
             return
@@ -77,7 +77,7 @@ struct BoundaryModeStateTests {
     }
 
     @Test func hjklMovesTheSelectedLineToTheNextGridLine() throws {
-        var state = try #require(state(tJunction, focused: "A"))
+        var state = try #require(makeState(tJunction, focused: "A"))
         guard case .apply(let targets) = state.handle(.move(.right)) else {
             Issue.record("expected apply")
             return
@@ -93,13 +93,13 @@ struct BoundaryModeStateTests {
     }
 
     @Test func verticalLineIgnoresUpAndDown() throws {
-        var state = try #require(state(tJunction, focused: "A"))
+        var state = try #require(makeState(tJunction, focused: "A"))
         #expect(state.handle(.move(.up)) == .ignored)
         #expect(state.handle(.fineMove(.down)) == .ignored)
     }
 
     @Test func fineStepMovesByPoints() throws {
-        var state = try #require(state(tJunction, focused: "A"))
+        var state = try #require(makeState(tJunction, focused: "A"))
         guard case .apply(let targets) = state.handle(.fineMove(.left)) else {
             Issue.record("expected apply")
             return
@@ -109,7 +109,7 @@ struct BoundaryModeStateTests {
     }
 
     @Test func crosspointMovesAlongBothAxes() throws {
-        var state = try #require(state(quarters))
+        var state = try #require(makeState(quarters))
         let index = try #require(state.items.firstIndex { $0.isCrosspoint })
         #expect(state.handle(.character(Character(state.labels[index]))) == .updated)
         #expect(state.selected.isCrosspoint)
@@ -131,7 +131,7 @@ struct BoundaryModeStateTests {
     }
 
     @Test func tabCyclesAndLabelsSelect() throws {
-        var state = try #require(state(tJunction, focused: "A"))
+        var state = try #require(makeState(tJunction, focused: "A"))
         #expect(state.items.count == 3)
         let start = state.selectedIndex
         _ = state.handle(.next)
@@ -145,14 +145,14 @@ struct BoundaryModeStateTests {
     }
 
     @Test func minimumSizeStopsTheMove() throws {
-        var state = try #require(state(["A": cells(0, 0, 1, 4), "B": cells(1, 0, 3, 4)], focused: "A"))
+        var state = try #require(makeState(["A": cells(0, 0, 1, 4), "B": cells(1, 0, 3, 4)], focused: "A"))
         // Moving left would give A zero width.
         #expect(state.handle(.move(.left)) == .ignored)
         #expect(state.handle(.fineMove(.left)) != .ignored)  // 250 → 240 wide is fine
     }
 
     @Test func refreshKeepsTheSelectionAfterAnAppRefused() throws {
-        var state = try #require(state(tJunction, focused: "A"))
+        var state = try #require(makeState(tJunction, focused: "A"))
         _ = state.handle(.move(.right))
         state.refresh(frames: tJunction)  // The move was reverted.
         guard case .boundary(let boundary) = state.selected else {
@@ -164,7 +164,7 @@ struct BoundaryModeStateTests {
     }
 
     @Test func exit() throws {
-        var state = try #require(state(tJunction))
+        var state = try #require(makeState(tJunction))
         #expect(state.handle(.exit) == .exit)
     }
 }

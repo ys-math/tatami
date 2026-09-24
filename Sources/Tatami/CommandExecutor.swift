@@ -51,6 +51,7 @@ final class CommandExecutor<System: WindowSystem> {
         case .resizeDown: return joinedResize(window, current, .down, display: display, grid: grid)
         case .resizeUp: return joinedResize(window, current, .up, display: display, grid: grid)
         case .resizeRight: return joinedResize(window, current, .right, display: display, grid: grid)
+        case .gridMode: return false  // Modal; handled by GridModeController.
         case .resizeAloneLeft: return resizeAlone(window, current, .left, grid: grid)
         case .resizeAloneDown: return resizeAlone(window, current, .down, grid: grid)
         case .resizeAloneUp: return resizeAlone(window, current, .up, grid: grid)
@@ -141,6 +142,19 @@ final class CommandExecutor<System: WindowSystem> {
     /// Apps that size in steps (e.g. terminals snapping to character cells)
     /// may land a little off target; anything further is treated as a refusal.
     static var complianceTolerance: CGFloat { 24 }
+
+    func gridSize(for display: Display) -> GridSize {
+        gridState.size(for: display.id, default: config.defaultGrid)
+    }
+
+    func grid(for display: Display) -> Grid {
+        Grid(size: gridSize(for: display), display: display, gaps: config.gaps)
+    }
+
+    func setGridSize(_ size: GridSize, for display: Display) {
+        gridState.set(size, for: display.id)
+        onGridStateChange(gridState)
+    }
 
     /// Changes the grid of `display` without moving any window.
     private func adjustGrid(_ display: Display, columns: Int = 0, rows: Int = 0) -> Bool {

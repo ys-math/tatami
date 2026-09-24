@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let files = SettingsFiles.standard
     private lazy var executor = CommandExecutor(system: AXWindowSystem(), gridState: files.loadState())
     private let gridFlash = GridFlash()
+    private lazy var gridMode = GridModeController(executor: executor)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setUpStatusItem()
@@ -78,14 +79,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         var problems: [String] = []
         for (action, hotkey) in bindings.sorted(by: { $0.key.rawValue < $1.key.rawValue }) {
             do {
-                try HotKeyCenter.shared.register(hotkey) { [executor] in
-                    executor.execute(action)
+                try HotKeyCenter.shared.register(hotkey) { [weak self] in
+                    self?.perform(action)
                 }
             } catch {
                 problems.append("\(hotkey) (\(action.rawValue)) is unavailable — used by another app?")
             }
         }
         return problems
+    }
+
+    private func perform(_ action: Action) {
+        switch action {
+        case .gridMode:
+            gridMode.begin()
+        default:
+            if gridMode.isActive {
+                gridMode.end()
+            }
+            executor.execute(action)
+        }
     }
 
     private func showProblems(_ problems: [String]) {

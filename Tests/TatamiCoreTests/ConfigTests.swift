@@ -33,11 +33,12 @@ struct HotkeyTests {
         }
     }
 
-    @Test func perEdgeGrowAndShrinkAreUnboundByDefault() {
+    @Test func perEdgeAndWindowCommandActionsAreUnboundByDefault() {
         let unbound = Set(Action.allCases).subtracting(Action.defaultBindings.keys)
         #expect(
             unbound == [
                 .growLeft, .growDown, .growUp, .growRight, .shrinkLeft, .shrinkDown, .shrinkUp, .shrinkRight,
+                .swapLeft, .swapDown, .swapUp, .swapRight, .rotateClockwise, .rotateCounterclockwise, .swapWithMain,
             ])
     }
 }

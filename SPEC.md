@@ -53,7 +53,7 @@ disables a binding.
 | Previous layout | `⌃⌥⇧ a` | |
 | Arrange all displays | `⌃⌥⌘ a` | |
 | Send to next / previous display | `⌃⌥ .` / `⌃⌥ ,` | §6 |
-| Window command prefix | `⌃⌥ w`, then a key | §7.1: `hjkl` swap, `r`/`R` rotate, `m` swap with main |
+| Window mode | `⌃⌥ w` | §7.1: select windows, `r`/`R` rotate, `hjkl` swap, `m` swap with main |
 
 Grid limits: columns and rows are clamped to `1...24`.
 
@@ -127,6 +127,10 @@ when the mode was entered. `Esc` or a mouse click cancels.
   faces both B and C. (Keyboard joined resize, §4, still moves full lines.)
 - A crosspoint is a point where vertical and horizontal segments meet;
   moving it moves every segment touching it along that axis.
+- A boundary is **not offered** when a crosspoint already moves exactly that
+  boundary along its axis (the crosspoint does the same and more). In
+  `A | (B / C)` only the dot is selectable; in a 2×2 the four segments stay,
+  because the dot moves both halves of a line at once.
 - Boundary labels sit mid-way along a boundary's longest stretch between
   crosspoints, never on a crosspoint.
 - The boundary of the focused window nearest its center is selected
@@ -181,24 +185,29 @@ when the mode was entered. `Esc` or a mouse click cancels.
   frame; no Screen Recording permission needed). Each window is placed on its
   own: an app refusing its slot does not undo the others.
 
-### 7.1 Swap and rotate (`⌃⌥ w` prefix)
+### 7.1 Window mode: swap and rotate (`⌃⌥ w`)
 
 Windows trade frames; nothing is resized to new sizes, so the layout stays.
-`⌃⌥ w` shows a hint and waits (2 s) for one key, like vim's `<C-w>`:
+`⌃⌥ w` opens a mode (like vim's `<C-w>`) on the focused window's display that
+**stays open until `Esc`** (or a click / `⌃⌥ w` again):
 
+- Every eligible window shows a label (labels skip `h j k l r m`). Typing a
+  label toggles that window's **selection**. Labels stay with their window as
+  it moves; the selection survives commands.
+- `r` / `R`: with two or more windows selected, rotate **just the selection**
+  one slot clockwise / counter-clockwise around its own center (two windows:
+  a swap). With none selected, rotate every eligible window. One selected:
+  beep.
 - `h`/`j`/`k`/`l`: swap the focused window with its neighbour in that
   direction — a window whose center lies beyond that edge and which shares
   part of it (nearest, then longest shared stretch). None → beep.
-- `r` / `R`: rotate every eligible window one slot clockwise /
-  counter-clockwise around the centroid of the windows.
-- `m`: swap with the main window (the largest; if the focused window is the
-  largest, the next largest).
-- `Esc`, an unknown key, a click or the timeout cancels.
+- `m`: swap the focused window with the main window (the largest; if the
+  focused window is the largest, the next largest).
 - Eligible windows are the auto-arrange set on the focused window's display.
   A refused size reverts every window (same read-back as joined resize).
-- Each command is also an action (`swapLeft`…, `rotateClockwise`,
-  `rotateCounterclockwise`, `swapWithMain`), unbound by default. Swapping
-  across displays is out of scope.
+- `swapLeft`…, `rotateClockwise`, `rotateCounterclockwise`, `swapWithMain`
+  are also actions, unbound by default. Swapping across displays is out of
+  scope.
 
 ## 8. Configuration
 

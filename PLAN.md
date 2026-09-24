@@ -82,8 +82,11 @@ Added after Phase 7 at the owner's request.
 
 - Boundary mode selects minimal boundaries (segments) and merged crosspoints;
   labels never sit on crosspoints.
-- `⌃⌥ w` prefix: `hjkl` swap with neighbour, `r`/`R` rotate clockwise /
-  counter-clockwise, `m` swap with main. Unbound actions for each.
+- Boundaries that a crosspoint already moves exactly are not offered (a T
+  shape shows only its dot).
+- `⌃⌥ w` window mode (open until Esc): labels select windows; `r`/`R` rotate
+  the selection (or all), `hjkl` swap with neighbour, `m` swap with main.
+  Unbound actions for each.
 - **Test:** 2×2 segments move independently; T-shape labels are separate;
   swap/rotate/main keep the layout.
 

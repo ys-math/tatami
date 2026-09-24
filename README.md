@@ -29,7 +29,7 @@ the build script uses it automatically.
 
 | Keys | Action |
 |---|---|
-| `⌃⌥ h/j/k/l` | Move the window one grid cell left/down/up/right |
+| `⌃⌥ h/j/k/l` | Move the window one grid cell left/down/up/right; past the edge, onto the adjacent display |
 | `⌃⌥ [` / `⌃⌥ ]` | Left / right half |
 | `⌃⌥ Return` | Maximize |
 | `⌃⌥ c` | Center |
@@ -43,6 +43,7 @@ the build script uses it automatically.
 | `⌃⌥ a` | Auto-arrange this display; press again within 3 s for the next layout |
 | `⌃⌥⇧ a` | Previous layout |
 | `⌃⌥⌘ a` | Auto-arrange every display (each with its last layout) |
+| `⌃⌥ .` / `⌃⌥ ,` | Send the window to the next / previous display, keeping its relative cells |
 
 Joined resize follows tmux: the key is the direction the boundary moves. It
 uses the window's right (bottom) boundary when that lies inside the display,

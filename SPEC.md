@@ -132,12 +132,13 @@ when the mode was entered. `Esc` or a mouse click cancels.
 ## 6. Multi-monitor
 
 - Displays are ordered by physical arrangement: left→right, then top→bottom.
-- **Send to next/previous display** maps the window's cell span proportionally
-  into the target display's grid (left half stays left half).
+- **Send to next/previous display** (wrapping) maps the window's cell span
+  proportionally into the target display's grid (left half stays left half).
 - **Edge crossing:** moving past the display edge with `⌃⌥ hjkl` jumps to the
-  physically adjacent display in that direction, landing in the nearest
-  column/row with the same proportional position on the other axis. No
-  adjacent display → no-op.
+  physically adjacent display in that direction: one that lies beyond that
+  edge and shares part of it (nearest first). The window enters at the near
+  edge of the new grid keeping its size in cells (clamped), with the other
+  axis mapped proportionally. No adjacent display → the window only snaps.
 - Directional focus (`⌥ hjkl` etc.) is **out of scope for v1**.
 
 ## 7. Auto-arrange

@@ -4,7 +4,9 @@ import CoreGraphics
 public enum FocusNavigation {
     /// The window to focus when moving from `focused` in `direction`.
     ///
-    /// First the neighbour on the same display (same rule as swap). At the
+    /// First the neighbour on the same display (same rule as swap, but
+    /// overlapping windows count once their center is past the focused
+    /// window's center, so windows behind others are reachable). At the
     /// display's edge, the adjacent display's window nearest the entering
     /// edge, then nearest the focused window's center along that edge.
     public static func next<ID: Hashable>(
@@ -14,7 +16,7 @@ public enum FocusNavigation {
             return nil
         }
         let onDisplay = windows.filter { Display.containing($0.value, in: displays)?.id == display.id }
-        if let neighbor = Swaps.neighbor(of: focused, direction, frames: onDisplay) {
+        if let neighbor = Swaps.neighbor(of: focused, direction, frames: onDisplay, overlapping: true) {
             return neighbor
         }
 

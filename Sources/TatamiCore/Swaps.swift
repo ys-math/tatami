@@ -8,7 +8,13 @@ public enum Swaps {
     /// that edge and it shares part of the edge. Nearest first, then the
     /// longest shared stretch, then closest to the focused window's center,
     /// then the top / left one — so ties never depend on dictionary order.
-    public static func neighbor<ID: Hashable>(of focused: ID, _ direction: Direction, frames: [ID: CGRect]) -> ID? {
+    ///
+    /// With `overlapping`, a window counts once its center is past the focused
+    /// window's center, so windows partly behind it (or it behind them) are
+    /// reachable too; overlapping ones rank as nearest.
+    public static func neighbor<ID: Hashable>(
+        of focused: ID, _ direction: Direction, frames: [ID: CGRect], overlapping: Bool = false
+    ) -> ID? {
         guard let frame = frames[focused] else { return nil }
         let axis = Axis(direction)
         let along = axis.perpendicular
@@ -16,9 +22,10 @@ public enum Swaps {
         func gap(_ rect: CGRect) -> CGFloat {
             direction.isForward ? axis.lo(rect) - axis.hi(frame) : axis.lo(frame) - axis.hi(rect)
         }
+        let (lo, hi) = overlapping ? (center(frame), center(frame)) : (axis.lo(frame), axis.hi(frame))
         let candidates = frames.filter { id, rect in
             id != focused
-                && (direction.isForward ? center(rect) > axis.hi(frame) : center(rect) < axis.lo(frame))
+                && (direction.isForward ? center(rect) > hi : center(rect) < lo)
                 && Boundaries.overlap(frame, rect, along: along) > 0
         }
         let focusedCenter = (along.lo(frame) + along.hi(frame)) / 2

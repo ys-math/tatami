@@ -67,7 +67,7 @@ For development: `make build`, `make test`, `make lint`, `make format`, and
 | `⌃⌥⌘ a` | Auto-arrange every display (each with its last layout) |
 | `⌃⌥ .` / `⌃⌥ ,` | Send the window to the next / previous display, keeping its relative cells |
 | `⌃⌥ w` | Window mode: swap and rotate windows (see below) |
-| `⌃⌘ h/j/k/l` | Focus the window to the left/below/above/right (crosses displays) |
+| `⌃⌘ h/j/k/l` | Focus the window to the left/below/above/right (also windows partly behind others; crosses displays) |
 | `⌃⌥ f` | Label every window; type a label to focus that window |
 
 Joined resize follows tmux: the key is the direction the boundary moves. It

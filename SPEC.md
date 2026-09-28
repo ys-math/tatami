@@ -213,9 +213,12 @@ Windows trade frames; nothing is resized to new sizes, so the layout stays.
 ### 7.2 Focus
 
 - **Directional** (`⌃⌘ hjkl`): focus the neighbour in that direction on the
-  same display (same rule as swap). At the display's edge, focus the adjacent
-  display's window nearest the entering edge, then nearest the focused
-  window's center along it. Nothing there → beep-free no-op.
+  same display (same rule as swap, except that overlapping windows count once
+  their center is past the focused window's center, so windows partly behind
+  others are reachable; overlapping ones rank as nearest). Windows with the
+  same center (exact stacks) are reached with hints. At the display's edge,
+  focus the adjacent display's window nearest the entering edge, then nearest
+  the focused window's center along it. Nothing there → beep-free no-op.
 - **Hints** (`⌃⌥ f`): a label on every window of the current Space on every
   display (display by display in physical order, reading order within).
   Typing a label focuses that window; `Esc`, a click or an unknown label

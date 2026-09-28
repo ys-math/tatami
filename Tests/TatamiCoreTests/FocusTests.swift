@@ -33,6 +33,19 @@ struct FocusNavigationTests {
         #expect(FocusNavigation.next(from: "D", .left, windows: windows, displays: [left, right]) == "C")
     }
 
+    @Test func reachesWindowsPartlyBehindOthers() {
+        let windows: [String: CGRect] = [
+            "front": CGRect(x: 100, y: 100, width: 600, height: 600),
+            // Mostly under "front", sticking out to the right and below.
+            "behind": CGRect(x: 200, y: 200, width: 600, height: 600),
+            "beside": CGRect(x: 820, y: 100, width: 150, height: 600),
+        ]
+        #expect(FocusNavigation.next(from: "front", .right, windows: windows, displays: [left]) == "behind")
+        #expect(FocusNavigation.next(from: "front", .down, windows: windows, displays: [left]) == "behind")
+        #expect(FocusNavigation.next(from: "behind", .left, windows: windows, displays: [left]) == "front")
+        #expect(FocusNavigation.next(from: "behind", .right, windows: windows, displays: [left]) == "beside")
+    }
+
     @Test func noDisplayBeyondTheEdge() {
         #expect(FocusNavigation.next(from: "A", .left, windows: windows, displays: [left, right]) == nil)
     }

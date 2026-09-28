@@ -219,6 +219,8 @@ Windows trade frames; nothing is resized to new sizes, so the layout stays.
   same center (exact stacks) are reached with hints. At the display's edge,
   focus the adjacent display's window nearest the entering edge, then nearest
   the focused window's center along it. Nothing there → beep-free no-op.
+  With no focused window (desktop, or an app without windows), any direction
+  focuses the frontmost window.
 - **Hints** (`⌃⌥ f`): a label on every window of the current Space on every
   display (display by display in physical order, reading order within).
   Typing a label focuses that window; `Esc`, a click or an unknown label

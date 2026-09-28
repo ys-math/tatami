@@ -427,6 +427,18 @@ struct FocusExecutorTests {
         #expect(system.focused == 2)
     }
 
+    @Test func focusWithNothingFocusedPicksTheFrontmostWindow() {
+        let system = FakeWindowSystem(
+            frames: [1: CGRect(x: 8, y: 32, width: 496, height: 500)], focused: nil, screens: [main])
+        #expect(CommandExecutor(system: system).execute(.focusLeft))
+        #expect(system.focused == 1)
+    }
+
+    @Test func focusWithNothingFocusedAndNoWindowsIsANoOp() {
+        let system = FakeWindowSystem(frames: [:], focused: nil, screens: [main])
+        #expect(!CommandExecutor(system: system).execute(.focusRight))
+    }
+
     @Test func focusDoesNotMoveWindows() {
         let frames: [Int: CGRect] = [
             1: CGRect(x: 8, y: 32, width: 496, height: 500), 2: CGRect(x: 512, y: 32, width: 496, height: 500),

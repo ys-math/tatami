@@ -28,6 +28,11 @@ final class CommandExecutor<System: WindowSystem> {
     /// Returns `false` when there was nothing to do (no window, at an edge, ...).
     @discardableResult
     func execute(_ action: Action) -> Bool {
+        if system.focusedWindow() == nil, action.isDirectionalFocus {
+            // Nothing focused (desktop, or an app without windows): there is no
+            // window to move from, so focus the frontmost one.
+            return system.windows().first.map { system.focus($0) } ?? false
+        }
         guard let window = system.focusedWindow(),
             let current = system.frame(of: window),
             let display = Display.containing(current, in: system.displays())
@@ -343,6 +348,15 @@ final class CommandExecutor<System: WindowSystem> {
         guard after != before else { return false }
         onGridStateChange(gridState)
         return true
+    }
+}
+
+extension Action {
+    fileprivate var isDirectionalFocus: Bool {
+        switch self {
+        case .focusLeft, .focusDown, .focusUp, .focusRight: true
+        default: false
+        }
     }
 }
 
